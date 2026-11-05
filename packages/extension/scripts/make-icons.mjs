@@ -1,4 +1,5 @@
-// Draws the AnyMCP icon (purple rounded square, white "A") as PNGs in static/icons/.
+// Draws the AnyMCP icon as PNGs in static/icons/: a hub with six connectors (a "wildcard" asterisk:
+// any site) in white on a violet-to-blue rounded square. Same shape as assets/icon.svg.
 // No dependencies: a tiny PNG encoder and 4x4 supersampling for smooth edges.
 import fs from "node:fs";
 import path from "node:path";
@@ -9,24 +10,28 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const outDir = path.join(root, "static", "icons");
 fs.mkdirSync(outDir, { recursive: true });
 
-const PURPLE = [0x7c, 0x3a, 0xed];
+const FROM = [0x7c, 0x3a, 0xed]; // top left
+const TO = [0x25, 0x63, 0xeb]; // bottom right
+const ANGLES = [-90, -30, 30, 90, 150, 210].map((a) => (a * Math.PI) / 180);
 
-// Shape in a 64x64 design grid. The "A" is an outline plus a triangular hole (even-odd fill).
-const A_OUTER = [
-  [16.5, 49], [28.2, 15], [35.8, 15], [47.5, 49], [40.9, 49], [38.4, 41.6], [25.6, 41.6], [23.1, 49],
-];
-const A_HOLE = [
-  [27.4, 35.6], [36.6, 35.6], [32, 22.4],
-];
+function segmentDistance(px, py, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(px - ax - t * dx, py - ay - t * dy);
+}
 
-function inPolygon(x, y, poly) {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+/** Is this point (64x64 design grid) part of the white mark? */
+function inMark(x, y) {
+  const d = Math.hypot(x - 32, y - 32);
+  if (d <= 6.4 && d >= 2.9) return true; // hub ring
+  for (const a of ANGLES) {
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    if (Math.hypot(x - (32 + c * 20), y - (32 + s * 20)) <= 4.9) return true; // connector
+    if (segmentDistance(x, y, 32 + c * 9.5, 32 + s * 9.5, 32 + c * 16, 32 + s * 16) <= 2.7) return true; // arm
   }
-  return inside;
+  return false;
 }
 
 function inRoundedSquare(x, y, size, r) {
@@ -49,17 +54,15 @@ function render(size) {
           const gy = (y + (sy + 0.5) / S) * scale;
           if (!inRoundedSquare(gx, gy, 64, 14)) continue;
           bg++;
-          if (inPolygon(gx, gy, A_OUTER) && !inPolygon(gx, gy, A_HOLE)) fg++;
+          if (inMark(gx, gy)) fg++;
         }
       }
-      const n = S * S;
-      const alpha = bg / n;
+      const t = Math.min(1, ((x + 0.5) * scale + (y + 0.5) * scale) / 128);
+      const base = FROM.map((c, k) => c + (TO[k] - c) * t);
       const white = bg ? fg / bg : 0;
       const i = (y * size + x) * 4;
-      px[i] = Math.round(PURPLE[0] + (255 - PURPLE[0]) * white);
-      px[i + 1] = Math.round(PURPLE[1] + (255 - PURPLE[1]) * white);
-      px[i + 2] = Math.round(PURPLE[2] + (255 - PURPLE[2]) * white);
-      px[i + 3] = Math.round(alpha * 255);
+      for (let k = 0; k < 3; k++) px[i + k] = Math.round(base[k] + (255 - base[k]) * white);
+      px[i + 3] = Math.round((bg / (S * S)) * 255);
     }
   }
   return px;

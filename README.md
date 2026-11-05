@@ -1,65 +1,66 @@
-<img src="assets/icon.svg" width="64" height="64" alt="">
+<p align="center">
+  <img src="assets/icon.svg" width="112" height="112" alt="AnyMCP logo">
+</p>
 
-# AnyMCP
+<h1 align="center">AnyMCP</h1>
 
-**One MCP install for your AI. Every website becomes a set of tools, and in our measurements your AI used 93–95% fewer tokens to get the same answers.**
+<p align="center">
+  <b>One MCP install. Every website becomes a tool your AI can use.</b><br>
+  Signed in as you, in your own browser, with 93–95% fewer tokens.
+</p>
 
-AnyMCP is an MCP server you add to your AI app once (Claude Code, Claude Desktop, Cursor…). From then on, your AI can use any website through small, direct tools instead of clicking through pages or loading dozens of separate MCP servers.
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#just-ask">Example prompts</a> ·
+  <a href="#token-savings">Token savings</a> ·
+  <a href="#more">Docs</a>
+</p>
 
-- **One install, every site.** Your AI searches a shared library of site tools (Hacker News, GitHub, npm, the weather, and sites you add) and loads only the one it needs.
-- **It learns as your AI works.** When there's no tool for a task, your AI does it in the browser once. AnyMCP watches the requests the site makes and turns them into a tool, so next time it's one call instead of a dozen clicks.
-- **It runs as you, in your own browser.** Signed-in sites work through your own Chrome tab. AnyMCP never sees or stores your cookies or passwords.
-- **It sits in front of your other MCP servers too**, so their tool lists stop filling every conversation (see [Connect your other MCP servers](#connect-your-other-mcp-servers)).
+<p align="center">
+  <img src="https://img.shields.io/badge/MCP-server-7c3aed" alt="MCP server">
+  <img src="https://img.shields.io/badge/node-%E2%89%A520-2563eb" alt="Node 20 or later">
+  <img src="https://img.shields.io/badge/Chrome-116%2B-2563eb" alt="Chrome 116 or later">
+  <img src="https://img.shields.io/badge/license-MIT-555" alt="MIT license">
+</p>
 
-## Token savings
+---
 
-Measured on real calls in November 2026, at about 4 characters per token.
+Add AnyMCP to Claude, Cursor or any MCP app once. Your AI can then search Hacker News, look up a package, check the weather, or **message someone on Instagram**, using small direct tools instead of clicking through pages.
 
-| Where tokens go | Without AnyMCP | With AnyMCP | Saved |
-|---|---|---|---|
-| **Tool list in every conversation** (100 sites, 3 tools each) | ~28k | ~1.4k | **95%** |
-| **API responses** (GitHub, npm, PyPI, Hacker News) | 160.4k | 8.9k | **94.5%** |
-| **Reading a heavy page** (Product Hunt home page, HTML vs. text) | ~354k | ~1.5k | **99.6%** |
+When there's no tool for something yet, your AI does it in the browser once, and **AnyMCP turns what the site did into a tool**. Next time it's a single call.
 
-**One example session**, using the numbers above: an AI app with 100 sites' tools loaded, making those four API calls, would use about **188k tokens**. With AnyMCP it uses about **10k**, **94.5% less**. Across all 8 calls measured (the four above plus four small ones), AnyMCP sent 12.5k tokens of the 176k the sites returned: **93% less**.
+## Just ask
 
-### Why it saves so much
+Once AnyMCP is installed, talk to your AI as usual:
 
-1. **The tool list stays small.** Most MCP setups put every tool's description into every conversation, about 95 tokens per tool. AnyMCP lists a dozen general tools, about 1.4k tokens, however many sites or servers you add. Your AI looks up a site's tool only when it needs it.
-2. **Responses are trimmed.** Each site tool keeps only the fields that matter. Results from other MCP servers are compacted too: empty fields dropped, JSON minified, very long output capped.
-3. **Clicking becomes one call.** Doing a task in the browser means many rounds of reading the page, finding a button and clicking. Once AnyMCP has learned the site's request, the same task is one `call_tool` with a small result. Tools repair themselves when sites change, so this keeps working.
-4. **Pages come back as text.** When there's no data call to use, AnyMCP returns only the page's readable text, never the HTML.
-5. **Learned tools are shared.** When someone shares a site's tools to the community library, everyone else gets the one-call version from the start.
+| | Try saying |
+|---|---|
+| 💬 **Social** | *"Send a message to @alex on Instagram saying I'm running 10 minutes late"* |
+| | *"What has @natgeo posted on Instagram this week?"* |
+| | *"Post on X: we just shipped v2 🎉"* |
+| | *"Summarize my latest LinkedIn notifications"* |
+| 🛠️ **Developer** | *"Find the most-starred Rust web frameworks on GitHub"* |
+| | *"What's the latest version of react on npm?"* |
+| | *"Top 5 stories on Hacker News right now"* |
+| | *"Find recent arXiv papers on speculative decoding"* |
+| 🌍 **Everyday** | *"What's the weather in Lisbon this weekend?"* |
+| | *"Find pharmacies near Times Square"* |
+| | *"What are Bitcoin and Ethereum trading at?"* |
+| | *"Read this page and give me the key points: https://…"* |
+| ⚙️ **AnyMCP itself** | *"Add amazon.com"* · *"How many tokens has AnyMCP saved?"* · *"Share my instagram.com tools"* |
 
-### The biggest API responses, call by call
+Anything that sends, posts, buys or deletes **asks you first**. Signed-in sites (Instagram, X, LinkedIn…) need the browser extension; public ones (GitHub search, weather, Hacker News) work without it.
 
-| Call | Site sent | AI received | Saved |
-|---|---|---|---|
-| PyPI package info | 48.2k | 0.1k | 99.8% |
-| GitHub repository search | 40.6k | 2.4k | 94% |
-| npm package search | 63.3k | 5.0k | 92% |
-| Hacker News front page | 8.3k | 1.4k | 83% |
+## Quick start
 
-### Where it saves less
-
-- **APIs that are already small.** A weather forecast or a Wikipedia summary is a few hundred tokens either way.
-- **The first time on a new site.** The AI clicks through once, and that's how the tool gets learned.
-- **Finding a tool takes a step or two** (`search_tools`, then `describe_tool`). Pin a site you use often to make its tools directly callable.
-- **Page reads compared with a good web-fetch tool.** The 99.6% is against the raw HTML. A fetch tool that already converts pages to text gets similar text. AnyMCP counts these separately and doesn't include them in the API savings.
-
-**See your own numbers:** ask your AI *"how many tokens has AnyMCP saved?"*, run `anymcp stats`, or open the extension's side panel.
-
-## Install
-
-You need Node.js 20+ and, for logged-in sites and browser tools, Chrome 116+.
-
-### 1. Add AnyMCP to your AI app
-
-**Claude Code**
+**1. Add AnyMCP to your AI app**
 
 ```sh
 claude mcp add anymcp -- npx -y anymcp-gateway
 ```
+
+<details>
+<summary>Claude Desktop, Cursor and other apps</summary>
 
 **Claude Desktop**: Settings → Developer → Edit Config, then add:
 
@@ -71,19 +72,82 @@ claude mcp add anymcp -- npx -y anymcp-gateway
 }
 ```
 
-**Cursor**: add the same block to `~/.cursor/mcp.json`.
+**Cursor**: add the same block to `~/.cursor/mcp.json`. Any other MCP app: run `npx -y anymcp-gateway` as a stdio server.
 
-That's enough for public tools. Ask: *"What's the weather in Lisbon this weekend?"*
+</details>
 
-### 2. Install the browser extension
+**2. Install the Chrome extension** (for sites you're signed in to)
 
-Until it's on the Chrome Web Store: run `npm run build` in this repo, open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and pick `packages/extension/dist`.
+Until it's on the Chrome Web Store: run `npm install && npm run build` in this repo, open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick `packages/extension/dist`. There's nothing to pair: the side panel's dot turns green when your AI app is open. (Other Chromium browsers, or your own builds: paste the token from `anymcp token` under the extension's Settings → Advanced.)
 
-That's it: there's nothing to pair. The gateway recognizes the official extension by its fixed ID, which Chrome itself reports, so other extensions and websites can't pretend to be it. The side panel's dot turns green whenever an AI app that uses AnyMCP is open.
+**3. Ask something.** *"What's the weather in Lisbon this weekend?"*
 
-(Other Chromium browsers or your own builds get a different ID; for those, paste the token from `anymcp token` under Settings → Advanced.)
+You need Node.js 20+ and, for the extension, Chrome 116+.
 
-## How the AI uses it
+## How it works
+
+```
+ You ──▶ your AI ──▶ AnyMCP ──┬──▶ public APIs (GitHub, npm, weather…)   no browser needed
+                              └──▶ your own Chrome tab, signed in as you  Instagram, X, LinkedIn…
+```
+
+1. **Find a tool.** Your AI searches AnyMCP's library and loads only the tool it needs.
+2. **No tool? Learn one.** Your AI does the task in the browser. AnyMCP watches the requests the site makes and saves them as a new tool.
+3. **Next time, one call.** The same kind of task, even with different details, is a single fast call. Tools fix themselves when sites change, and you can share them with everyone.
+
+## Token savings
+
+Measured on real calls in November 2026, at about 4 characters per token.
+
+| Where tokens go | Without AnyMCP | With AnyMCP | Saved |
+|---|---|---|---|
+| **Tool list in every conversation** (100 sites, 3 tools each) | ~28k | ~1.4k | **95%** |
+| **API responses** (GitHub, npm, PyPI, Hacker News) | 160.4k | 8.9k | **94.5%** |
+| **Reading a heavy page** (Product Hunt home page, HTML vs. text) | ~354k | ~1.5k | **99.6%** |
+
+A session with 100 sites' tools loaded and those four API calls uses about **188k tokens** without AnyMCP and about **10k** with it: **94.5% less**.
+
+<details>
+<summary>Call by call, why it saves so much, and where it saves less</summary>
+
+| Call | Site sent | AI received | Saved |
+|---|---|---|---|
+| PyPI package info | 48.2k | 0.1k | 99.8% |
+| GitHub repository search | 40.6k | 2.4k | 94% |
+| npm package search | 63.3k | 5.0k | 92% |
+| Hacker News front page | 8.3k | 1.4k | 83% |
+
+Across all 8 calls measured (these four plus four small ones), AnyMCP sent 12.5k tokens of the 176k the sites returned: 93% less.
+
+**Why it saves so much**
+- **The tool list stays small.** Most MCP setups put every tool's description in every conversation, about 95 tokens per tool. AnyMCP lists a dozen general tools, about 1.4k tokens, however many sites or servers you add.
+- **Responses are trimmed** to the fields that matter. Results from other MCP servers are compacted too.
+- **Clicking becomes one call.** Many rounds of reading a page and clicking become one small `call_tool`.
+- **Pages come back as text**, never HTML.
+- **Learned tools are shared**, so others get the one-call version from the start.
+
+**Where it saves less**
+- APIs that are already small, like a weather forecast.
+- The first visit to a new site, while the tool is being learned.
+- Finding a tool takes a step or two (`search_tools`, `describe_tool`). Pin a site you use often to skip this.
+- The 99.6% page figure is against raw HTML. A web-fetch tool that already returns text gets similar text.
+
+**Your own numbers:** ask *"how many tokens has AnyMCP saved?"*, run `anymcp stats`, or open the extension's side panel.
+
+</details>
+
+## Safe by design
+
+- 🔐 **Your logins stay in your browser.** AnyMCP never sees or stores your passwords, cookies or session codes.
+- ✋ **You approve it.** The first use of a site asks you, and anything that changes data asks every time unless you choose "always".
+- 🐢 **It acts like a person.** Calls are spaced out and capped per site, most of all on social networks, and AnyMCP stops by itself if a site pushes back (captcha, "too many requests"). Many sites' terms don't allow automation, so use it at your own risk.
+- 🧾 **Tools are plain data.** A shared tool is a JSON file, never code, and it's checked for personal data before you share it.
+
+<a id="more"></a>
+## More
+
+<details>
+<summary><b>All the tools your AI gets</b></summary>
 
 AnyMCP gives the AI a few tools instead of hundreds, so it doesn't fill the AI's context:
 
@@ -109,7 +173,10 @@ Browser tools that work on any page: `list_tabs`, `read_page`, `find_elements`, 
 
 A typical call: `search_tools("weather")` → `describe_tool("open-meteo.com/get_forecast")` → `call_tool(...)`.
 
-## Make tools for any site
+</details>
+
+<details>
+<summary><b>Make tools for any site (recording and learning)</b></summary>
 
 Most of the time you don't need to do anything: your AI learns a site as it uses it (see below). To set one up yourself, ask your AI to *"add instagram.com"* (it calls `add_site`) or click **Record this site** in the side panel. A setup window opens:
 
@@ -144,7 +211,10 @@ Tools also get better over time. When the AI's clicks do the same action as an e
 
 For these, the general browser tools (`read_page`, `find_elements`, `click`, `fill`, `navigate`) still work on any page.
 
-## Connect your other MCP servers
+</details>
+
+<details>
+<summary><b>Connect your other MCP servers</b></summary>
 
 AnyMCP can also sit in front of the other MCP servers you use (GitHub, filesystem, Notion…). Every server you add to your AI app normally puts all its tool definitions into every conversation; big ones cost tens of thousands of tokens before you ask anything. Behind AnyMCP their tools live in the catalog: the AI finds them with `search_tools`, loads one tool's details with `describe_tool`, and runs it with `call_tool`. Results are compacted (empty and null fields dropped, JSON minified, very long output capped) and counted in your token savings.
 
@@ -170,7 +240,10 @@ Remote servers are tried over Streamable HTTP first and fall back to the older S
 
 **One copy of each server.** However many AI sessions you have open, only the main AnyMCP gateway (the one connected to Chrome) runs your servers; the others send their calls to it. A server's questions still go back to the session that made the call: a server works for one session at a time (calls from the same session run side by side, other sessions wait their turn), so a question always has exactly one owner.
 
-## Staying in control
+</details>
+
+<details>
+<summary><b>Approvals and staying in control</b></summary>
 
 - **It pauses for you instead of giving up.** If a site says you're signed out (or sends the AI to a login page), AnyMCP opens the site in Chrome, asks you to sign in, waits, and retries. AnyMCP never asks for passwords or codes itself: you sign in on the real site. The AI can also ask you anything mid-task with `ask_user` and wait for the answer.
 - **First use of a site asks you.** Choose "always" to stop being asked for that site.
@@ -179,7 +252,10 @@ Remote servers are tried over Streamable HTTP first and fall back to the older S
 - **The extension only works on sites you allow.** When your AI needs a new site, a small window asks you; you can also click **Allow on this site** in the side panel.
 - Text from web pages is marked as untrusted, so the AI treats it as content and not as instructions.
 
-## Keeping your accounts safe
+</details>
+
+<details>
+<summary><b>Keeping your accounts safe (pacing and pauses)</b></summary>
 
 Sites like Instagram, Facebook, X and LinkedIn limit or block accounts that act like bots. AnyMCP runs as you, in your own browser, so to the site it looks like you, as long as it behaves like a person. To keep it that way, AnyMCP paces everything it does on a site, whether through a tool or the browser tools:
 
@@ -201,7 +277,10 @@ Gaps are random, so the timing isn't machine-regular. The daily caps on posts, l
 
 **Read the site's terms.** Many sites don't allow automated use, even of your own account. AnyMCP says so the first time it uses one of these sites, and you use it at your own risk. Pacing lowers the chance of a block; it can't rule one out.
 
-## CLI
+</details>
+
+<details>
+<summary><b>Command line</b></summary>
 
 ```text
 anymcp                     Run the MCP server (this is what your AI app launches)
@@ -221,13 +300,19 @@ anymcp server …            Connect your other MCP servers (see above)
 
 Settings and data live in `~/.anymcp` (set `ANYMCP_HOME` to change it).
 
-## Community registry
+</details>
+
+<details>
+<summary><b>Community registry</b></summary>
 
 Site tools are described by **profiles**: plain JSON files, never code. The registry in [`registry/`](registry/) has 11 profiles to start with (Hacker News, Wikipedia, GitHub, npm, PyPI, Stack Overflow, Open-Meteo, OpenStreetMap, arXiv, a dictionary and CoinGecko) and four curated lists.
 
 To add a site, see [CONTRIBUTING.md](CONTRIBUTING.md). The format is in [docs/profile-format.md](docs/profile-format.md).
 
-## Development
+</details>
+
+<details>
+<summary><b>Development</b></summary>
 
 ```sh
 npm install
@@ -246,6 +331,8 @@ npm run package:extension  # zip the extension for the Chrome Web Store
 | `docs/` | Profile format, publishing guide |
 
 Design and milestones: [PLAN.md](PLAN.md). Privacy: [PRIVACY.md](PRIVACY.md). Releasing: [docs/publishing.md](docs/publishing.md).
+
+</details>
 
 ## License
 
