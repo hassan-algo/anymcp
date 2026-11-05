@@ -78,11 +78,36 @@ claude mcp add anymcp -- npx -y anymcp-gateway
 
 **2. Install the Chrome extension** (for sites you're signed in to)
 
-Until it's on the Chrome Web Store: run `npm install && npm run build` in this repo, open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick `packages/extension/dist`. There's nothing to pair: the side panel's dot turns green when your AI app is open. (Other Chromium browsers, or your own builds: paste the token from `anymcp token` under the extension's Settings → Advanced.)
+Until it's on the Chrome Web Store: run `npm install && npm run build` in this repo, open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick `packages/extension/dist`. There's usually nothing to pair: the side panel's dot turns green when your AI app is open. If it says **Pairing failed**, see [The pairing token](#the-pairing-token) below.
 
 **3. Ask something.** *"What's the weather in Lisbon this weekend?"*
 
 You need Node.js 20+ and, for the extension, Chrome 116+.
+
+<details>
+<summary>Running from this repo instead of npm</summary>
+
+Until `anymcp-gateway` is on npm, point your AI app at your local build (after `npm install && npm run build`):
+
+```sh
+claude mcp add --scope user anymcp -- node /path/to/anymcp/packages/gateway/dist/index.js
+```
+
+Anywhere this README says `anymcp …` or `npx -y anymcp-gateway …`, you can run `node /path/to/anymcp/packages/gateway/dist/index.js …` instead.
+
+</details>
+
+### The pairing token
+
+The gateway only takes orders from the AnyMCP extension. The official extension (and the unpacked build from this repo) is recognized by its fixed ID, so **most people never need the token**. You need it when the side panel says **Pairing failed**, for example in another Chromium browser (Edge, Brave, Arc) or with an extension build that has a different ID.
+
+1. **Get the token**, any one of these:
+   - `npx -y anymcp-gateway token` (or `node packages/gateway/dist/index.js token` from this repo)
+   - open `~/.anymcp/config.json` and copy the `"token"` value (on Windows: `%USERPROFILE%\.anymcp\config.json`; if you set `ANYMCP_HOME`, it's in that folder)
+   - the file is created the first time the gateway runs, so start your AI app once if it isn't there yet
+2. **Paste it into the extension:** click the AnyMCP icon to open the side panel → **Settings** → **Advanced** → **Pairing token** → **Save and reconnect**. The dot turns green.
+
+The token is like a password for your computer's AnyMCP gateway: anything that has it can act in your signed-in browser through AnyMCP. Don't share it. To change it, delete the `"token"` line from `~/.anymcp/config.json`; a new one is made the next time the gateway starts (then paste the new one).
 
 ## How it works
 
