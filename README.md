@@ -85,9 +85,9 @@ Until it's on the Chrome Web Store: run `npm install && npm run build` in this r
 You need Node.js 20+ and, for the extension, Chrome 116+.
 
 <details>
-<summary>Running from this repo instead of npm</summary>
+<summary>Running from this repo (for development)</summary>
 
-Until `anymcp-gateway` is on npm, point your AI app at your local build (after `npm install && npm run build`):
+The gateway is on npm as [`anymcp-gateway`](https://www.npmjs.com/package/anymcp-gateway). To work on it, point your AI app at your local build instead (after `npm install && npm run build`):
 
 ```sh
 claude mcp add --scope user anymcp -- node /path/to/anymcp/packages/gateway/dist/index.js

@@ -85,7 +85,7 @@ Plus generic browser tools that work everywhere: `list_tabs`, `read_page`, later
 | M5 | Tool generation: forms, WebMCP/OpenAPI, recording mode (incl. persisted GraphQL, page visits, live session values) | done; recording any site: built, see below |
 | M6 | Publish flow with personal-data stripping, CI checks | built: privacy scan in shared, PR checks in `.github/workflows/registry.yml` |
 | M7 | Pinning, approval prompts, side panel | done, tested end to end |
-| M8 | Ship (Chrome Web Store, `npx -y anymcp-gateway`), then the registry website | ready to publish, not published yet (needs npm and Chrome Web Store accounts); registry website not started |
+| M8 | Ship (Chrome Web Store, `npx -y anymcp-gateway`), then the registry website | gateway published on npm (`anymcp-gateway` 0.1.0); Chrome Web Store not yet; registry website not started |
 
 ## Recording any site (built)
 
@@ -107,4 +107,4 @@ The recorder turns what a site does into tools, for almost any site:
 - The npm name `anymcp` belongs to an unrelated package, so this one publishes as `anymcp-gateway`.
 - Recorded tools can still fail on sites that sign each request with in-page code, talk only over WebSockets, block automation or show CAPTCHAs. The browser tools (`read_page`, `click`, `fill`…) are the fallback.
 - `{$live:…}` values come from the page's own recent requests, so a site has to be open (or opened by AnyMCP in a background tab) and have made at least one request first.
-- Not done yet: publishing to npm and the Chrome Web Store, the public GitHub registry repo, the registry website.
+- Not done yet: the Chrome Web Store listing and the registry website. Done: npm (`anymcp-gateway`), public GitHub repo (hassan-algo/anymcp).
