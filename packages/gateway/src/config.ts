@@ -68,6 +68,10 @@ function readStoredSettings(paths: Paths): StoredSettings {
   return raw && typeof raw === "object" ? (raw as StoredSettings) : {};
 }
 
+/** The community registry everyone gets unless they choose another (Settings, or config.json). */
+export const DEFAULT_REGISTRY_REPO = "hassan-algo/anymcp";
+export const DEFAULT_REGISTRY_URL = `https://raw.githubusercontent.com/${DEFAULT_REGISTRY_REPO}/main/registry/index.json`;
+
 /** Reads config.json, creating it with a fresh pairing token on first run. */
 export function loadSettings(paths = getPaths()): Settings {
   const stored = readStoredSettings(paths);
@@ -80,8 +84,9 @@ export function loadSettings(paths = getPaths()): Settings {
   return {
     token,
     port,
-    registryUrl: process.env.ANYMCP_REGISTRY_URL ?? stored.registryUrl,
-    registryRepo: stored.registryRepo,
+    // ANYMCP_REGISTRY_URL="" turns syncing off (the tests do this).
+    registryUrl: process.env.ANYMCP_REGISTRY_URL ?? stored.registryUrl ?? DEFAULT_REGISTRY_URL,
+    registryRepo: stored.registryRepo ?? DEFAULT_REGISTRY_REPO,
   };
 }
 

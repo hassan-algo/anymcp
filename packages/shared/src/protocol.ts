@@ -238,6 +238,8 @@ export interface UsageStats {
   pages: { calls: number; htmlTokens: number; textTokens: number };
   /** Tool definitions the AI keeps in context, vs. listing every tool of every site. */
   toolList: { toolCount: number; loadedTokens: number; allToolsTokens: number; savedTokens: number };
+  /** Sites AnyMCP has paused because they pushed back (captcha, too many requests…). */
+  paused?: { site: string; until: number; reason: string }[];
 }
 
 export interface GatewayMethods {
@@ -259,6 +261,8 @@ export interface GatewayMethods {
   reset_stats: { params: Record<string, never>; result: { ok: true } };
   /** Re-download the community registry now. */
   sync_registry: { params: Record<string, never>; result: { ok: true; profiles: number } };
+  /** Ends a site's pause early, once the user has cleared the site's check. */
+  resume_site: { params: { site: string }; result: { ok: true } };
 }
 
 /** Peer gateways forward browser calls to the gateway that owns the extension connection. */

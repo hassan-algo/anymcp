@@ -42,7 +42,7 @@ import { recordToolHealth } from "./health.js";
 import { Upstream, type CallOwner } from "./upstream.js";
 import { sampleWithClaude, type McpSamplingRequest } from "./sampling.js";
 import { learnFromActivity, mergeIntoSite, readNotices } from "./learn.js";
-import { Pacer } from "./pacing.js";
+import { Pacer, resumeSite } from "./pacing.js";
 import { definitionChars, getStats, recordDescribed, recordPageRead, recordSession, recordUsage, resetStats, setListedChars, statsSummary } from "./stats.js";
 import { BUILD, VERSION } from "./version.js";
 
@@ -1204,8 +1204,16 @@ export async function serve(): Promise<void> {
         }
         return r;
       }
-      case "get_stats":
-        return getStats(paths, catalog, listedChars());
+      case "get_stats": {
+        const paused = pacer
+          .status()
+          .filter((x) => x.pausedUntil)
+          .map((x) => ({ site: x.site, until: x.pausedUntil!, reason: x.pauseReason ?? "it was limiting requests" }));
+        return { ...getStats(paths, catalog, listedChars()), paused };
+      }
+      case "resume_site":
+        resumeSite(paths, String(p.site ?? ""));
+        return { ok: true };
       case "reset_stats":
         resetStats(paths);
         return { ok: true };

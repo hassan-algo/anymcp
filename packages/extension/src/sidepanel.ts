@@ -101,16 +101,62 @@ async function refreshStats(): Promise<void> {
   renderSites();
 }
 
+/** Sites AnyMCP paused to protect the user's account, with a button to resume. */
+function pausedNotice(st: UsageStats): Node | undefined {
+  const paused = (st.paused ?? []).filter((p) => p.until > Date.now());
+  if (!paused.length) return undefined;
+  const time = (t: number) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return h(
+    "div",
+    { class: "notice warn" },
+    h("p", { class: "small" }, h("b", {}, "Paused to protect your account")),
+    ...paused.map((p) =>
+      h(
+        "p",
+        { class: "small" },
+        `${p.site} until ${time(p.until)}: ${p.reason}. If the site showed a check, clear it there, then `,
+        h(
+          "button",
+          {
+            class: "link",
+            onClick: async () => {
+              try {
+                await gw("resume_site", { site: p.site });
+                await refreshStats();
+              } catch (err) {
+                alert(errText(err));
+              }
+            },
+          },
+          "resume",
+        ),
+        ".",
+      ),
+    ),
+  );
+}
+
 function renderSavings(): void {
   const el = $("savings");
   const st = state.stats;
   el.hidden = !connected() || !st;
   if (!st) return;
+  const paused = pausedNotice(st);
   const pages = st.pages ?? { calls: 0, htmlTokens: 0, textTokens: 0 };
   // Older gateways don't report MCP servers.
   const mcp = st.mcp ?? { calls: 0, savedTokens: 0, sessions: 0, definitionsSavedTokens: 0, servers: [] };
+  // Shown when no other MCP server goes through AnyMCP: their calls can't be counted until one does.
+  const mcpHint =
+    mcp.servers.length === 0 &&
+    h(
+      "p",
+      { class: "muted small" },
+      "Your other MCP servers aren't counted yet: they only save tokens when they go through AnyMCP. Run ",
+      h("code", {}, "anymcp server import"),
+      " to move them over.",
+    );
   if (!st.calls && !pages.calls && !mcp.definitionsSavedTokens) {
-    put(el, h("p", { class: "savings-empty muted" }, "No savings yet"));
+    put(el, paused, h("p", { class: "savings-empty muted" }, "No savings yet"), mcpHint);
     return;
   }
   const siteCalls = st.calls - mcp.calls;
@@ -190,6 +236,7 @@ function renderSavings(): void {
         { class: "small" },
         `Tool list: ${fmt(st.toolList.loadedTokens)} tokens in your AI's context instead of ${fmt(st.toolList.allToolsTokens)} for all ${st.toolList.toolCount} site and MCP server tools.`,
       ),
+    mcpHint,
     h(
       "p",
       { class: "muted small" },
@@ -197,7 +244,7 @@ function renderSavings(): void {
     ),
   );
   details.addEventListener("toggle", () => (state.savingsOpen = details.open));
-  put(el, details);
+  put(el, paused, details);
 }
 
 // ---- Your sites ---------------------------------------------------------------

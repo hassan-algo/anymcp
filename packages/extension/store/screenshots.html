@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AnyMCP store images</title>
+<!-- Chrome Web Store images. Render each scene with store/render.sh (headless Chrome).
+     #1 #2 #3 are 1280x800 screenshots, #tile is the 440x280 promo tile. -->
+<style>
+  :root {
+    --violet: #7c3aed; --blue: #2563eb; --text: #18181b; --muted: #6b6b76;
+    --border: #e6e6eb; --surface: #f6f6f8; --ok: #16a34a; --soft: #f2ecff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif; color: var(--text); }
+  .scene { display: none; width: 1280px; height: 800px; padding: 72px 80px;
+    background: linear-gradient(135deg, var(--violet), var(--blue)); color: #fff;
+    grid-template-columns: 470px 1fr; gap: 64px; align-items: center; }
+  .scene.on { display: grid; }
+  .brand { display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: 26px; margin-bottom: 40px; }
+  .brand img { width: 52px; height: 52px; border-radius: 12px; box-shadow: 0 0 0 2px rgba(255,255,255,.35); }
+  h1 { font-size: 50px; line-height: 1.08; margin: 0 0 22px; letter-spacing: -0.02em; }
+  .lead { font-size: 22px; line-height: 1.45; opacity: .92; margin: 0 0 28px; }
+  ul.points { list-style: none; padding: 0; margin: 0; font-size: 19px; line-height: 1.5; }
+  ul.points li { padding-left: 30px; position: relative; margin-bottom: 12px; opacity: .95; }
+  ul.points li::before { content: "✓"; position: absolute; left: 0; font-weight: 700; }
+  .card { background: #fff; color: var(--text); border-radius: 18px; box-shadow: 0 30px 80px rgba(20,10,60,.35); overflow: hidden; }
+  .bar { height: 44px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; padding: 0 16px; }
+  .bar i { width: 12px; height: 12px; border-radius: 50%; background: #d4d4d8; display: block; }
+  .bar span { margin-left: 12px; font-size: 14px; color: var(--muted); }
+  .body { padding: 28px 30px; font-size: 18px; line-height: 1.5; }
+  .you { margin-left: auto; max-width: 80%; background: var(--soft); border-radius: 16px 16px 4px 16px; padding: 14px 18px; width: fit-content; }
+  .tool { margin: 18px 0; font-size: 14px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+  .tool b { color: var(--violet); font-weight: 600; }
+  .pill { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: #e8f7ee; color: var(--ok); }
+  .ai p { margin: 0 0 10px; }
+  .ai ol { margin: 0 0 10px; padding-left: 22px; }
+  .ai li { margin-bottom: 4px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 14px; }
+  /* side panel */
+  .panel { width: 420px; margin-left: auto; }
+  .row { display: flex; align-items: center; justify-content: space-between; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); display: inline-block; margin-right: 8px; }
+  .big { font-size: 46px; font-weight: 700; color: var(--violet); letter-spacing: -0.02em; }
+  .section { border-top: 1px solid var(--border); padding-top: 16px; margin-top: 18px; }
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; margin-bottom: 10px; }
+  .t { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; font-size: 15px; }
+  .t code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 14px; }
+  .tag { font-size: 12px; color: var(--muted); }
+  .tag.new { color: var(--violet); font-weight: 600; }
+  .btn { display: inline-block; padding: 11px 18px; border-radius: 10px; font-weight: 600; font-size: 16px; border: 1px solid var(--border); }
+  .btn.primary { background: var(--violet); color: #fff; border-color: var(--violet); }
+  /* approval */
+  .approve { width: 520px; margin-left: auto; }
+  .approve h2 { margin: 0 0 8px; font-size: 24px; }
+  .details { background: var(--surface); border-radius: 12px; padding: 14px 16px; margin: 18px 0 22px; font-size: 16px; }
+  .details div { margin-bottom: 6px; }
+  .actions { display: flex; gap: 10px; }
+  /* tile */
+  #tile { width: 440px; height: 280px; padding: 36px; grid-template-columns: 1fr; gap: 0; align-content: center; }
+  #tile .brand { margin: 0 0 16px; font-size: 34px; }
+  #tile .brand img { width: 64px; height: 64px; border-radius: 14px; }
+  #tile p { margin: 0; font-size: 19px; line-height: 1.4; opacity: .95; }
+</style>
+</head>
+<body>
+
+<!-- 1: what it does -->
+<section class="scene" id="s1">
+  <div>
+    <div class="brand"><img src="../static/icons/icon128.png" alt="">AnyMCP</div>
+    <h1>Ask your AI. It uses the website for you.</h1>
+    <p class="lead">One MCP install for Claude, Cursor and other AI apps. Every website becomes a tool.</p>
+    <ul class="points">
+      <li>Works with sites you're signed in to</li>
+      <li>One small call instead of clicking through pages</li>
+      <li>93–95% fewer tokens in our measurements</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="bar"><i></i><i></i><i></i><span>Your AI app</span></div>
+    <div class="body">
+      <div class="you">Find the most-starred Rust web frameworks on GitHub</div>
+      <div class="tool">⚙︎ AnyMCP · <b>github.com/search_repositories</b> <span class="pill">1 call</span></div>
+      <div class="ai">
+        <p>Here are the most-starred Rust web frameworks on GitHub:</p>
+        <ol>
+          <li><b>actix-web</b> – fast, actor-based web framework</li>
+          <li><b>axum</b> – built on Tokio and Tower</li>
+          <li><b>rocket</b> – focused on ease of use</li>
+          <li><b>warp</b> – composable filters</li>
+        </ol>
+        <p class="muted small">AnyMCP sent the AI 2.4k tokens instead of 40.6k.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2: it learns sites -->
+<section class="scene" id="s2">
+  <div>
+    <div class="brand"><img src="../static/icons/icon128.png" alt="">AnyMCP</div>
+    <h1>It learns any site as your AI works.</h1>
+    <p class="lead">When there's no tool yet, your AI does the task in the browser once. AnyMCP turns what the site did into a tool, so next time it's one call.</p>
+    <ul class="points">
+      <li>Runs in your own Chrome tab, signed in as you</li>
+      <li>Tools repair themselves when sites change</li>
+      <li>Share tools with everyone in the community library</li>
+    </ul>
+  </div>
+  <div class="card panel">
+    <div class="bar"><span>AnyMCP side panel</span></div>
+    <div class="body">
+      <div class="row"><span><span class="dot"></span><b>Connected</b></span><span class="muted small">Claude Code</span></div>
+      <div class="section">
+        <div class="label">Tokens saved</div>
+        <div class="big">93%</div>
+        <div class="muted small">12.5k sent to your AI instead of 176k</div>
+      </div>
+      <div class="section">
+        <div class="label">This site · instagram.com</div>
+        <div class="t"><code>open_profile</code><span class="tag">reads</span></div>
+        <div class="t"><code>search_users</code><span class="tag">reads</span></div>
+        <div class="t"><code>profile_posts</code><span class="tag new">learned today</span></div>
+        <div class="t"><code>send_message</code><span class="tag">asks you first</span></div>
+      </div>
+      <div class="section"><span class="btn primary">Record this site</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3: you stay in control -->
+<section class="scene" id="s3">
+  <div>
+    <div class="brand"><img src="../static/icons/icon128.png" alt="">AnyMCP</div>
+    <h1>You approve anything that changes data.</h1>
+    <p class="lead">Posting, messaging, buying and deleting always ask first, unless you choose "always".</p>
+    <ul class="points">
+      <li>Works only on sites you allow</li>
+      <li>Never sees your passwords or cookies</li>
+      <li>Paces itself and stops if a site pushes back</li>
+      <li>No servers, no accounts, no data collected</li>
+    </ul>
+  </div>
+  <div class="card approve">
+    <div class="bar"><span>AnyMCP</span></div>
+    <div class="body">
+      <h2>Send message on Instagram?</h2>
+      <div class="muted">Your AI wants to run "Send message". This can change your data on the site.</div>
+      <div class="details">
+        <div><b>to:</b> @alex</div>
+        <div><b>text:</b> Running 10 minutes late, sorry!</div>
+      </div>
+      <div class="actions">
+        <span class="btn primary">Allow once</span>
+        <span class="btn">Always allow</span>
+        <span class="btn">Deny</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- promo tile, 440x280 -->
+<section class="scene" id="tile">
+  <div class="brand"><img src="../static/icons/icon128.png" alt="">AnyMCP</div>
+  <p>Turn any website into tools your AI can use.</p>
+</section>
+
+<script>
+  const id = (location.hash || "#1").slice(1);
+  const el = document.getElementById(id === "tile" ? "tile" : `s${id}`);
+  el.classList.add("on");
+  if (id === "tile") { document.documentElement.style.width = document.body.style.width = "440px"; document.documentElement.style.height = document.body.style.height = "280px"; }
+</script>
+</body>
+</html>
