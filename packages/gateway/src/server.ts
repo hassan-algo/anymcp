@@ -415,7 +415,10 @@ export async function serve(): Promise<void> {
     if (!blocked && !counted) return undefined;
     return pacer.after(url, { blocked, ok: true }) ?? (blocked ? `This page looks like a security check: ${blocked}.` : undefined);
   }
-  const tabId = { type: "integer", description: "Tab id from list_tabs. Omit for the active tab." };
+  const tabId = {
+    type: "integer",
+    description: "Tab id from list_tabs. Omit for the background tab you opened with navigate, or the user's active tab if there's none.",
+  };
 
   const fixed: ToolDef[] = [
     {
@@ -933,7 +936,10 @@ export async function serve(): Promise<void> {
     {
       name: "navigate",
       title: "Open a URL",
-      description: "Open a URL in a tab (default: the active tab), or in a new tab with newTab.",
+      description:
+        "Open a URL in AnyMCP's own background tab, so the user's current tab is never changed. Later navigate, " +
+        "read_page, click and fill calls use that tab. It closes by itself after a few minutes unused. newTab opens " +
+        "another background tab; pass tabId only to change a tab the user asked you to use.",
       inputSchema: {
         type: "object",
         properties: { url: { type: "string" }, tabId, newTab: { type: "boolean" } },
@@ -955,7 +961,9 @@ export async function serve(): Promise<void> {
     {
       name: "screenshot",
       title: "Screenshot",
-      description: "Take a screenshot of a tab (default: the active tab). The tab is brought to the front first.",
+      description:
+        "Take a screenshot of a tab (default: your background tab, or the user's active tab). A background tab is shown " +
+        "for a moment and the user's tab comes straight back. Prefer read_page: it's cheaper and doesn't flash a tab.",
       inputSchema: { type: "object", properties: { tabId } },
       annotations: { readOnlyHint: true },
       run: async ({ tabId: t }) => {

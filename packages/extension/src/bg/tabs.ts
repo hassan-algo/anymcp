@@ -4,7 +4,10 @@ import { originMatches, type TabInfo } from "@anymcp/shared";
 import type { InjectedError } from "../page/inpage.js";
 
 const HELPERS_KEY = "helperTabs";
-const HELPER_IDLE_MS = 5 * 60_000;
+/** The background tab the AI browses in (navigate, click, read_page…). */
+const AI_TAB_KEY = "aiTab";
+/** AnyMCP's own tabs close after this long unused. */
+const HELPER_IDLE_MS = 3 * 60_000;
 
 export function toTabInfo(t: chrome.tabs.Tab): TabInfo {
   return { id: t.id!, windowId: t.windowId, title: t.title ?? "", url: t.url ?? "", active: t.active };
@@ -16,8 +19,12 @@ export async function activeTab(): Promise<chrome.tabs.Tab> {
   return tab;
 }
 
+/**
+ * A tab by id. Without one: the background tab the AI is browsing in, if it's still open,
+ * otherwise the tab the user is looking at (for "read this page").
+ */
 export async function getTab(tabId?: number): Promise<chrome.tabs.Tab> {
-  if (tabId === undefined) return activeTab();
+  if (tabId === undefined) return (await aiTab()) ?? activeTab();
   try {
     return await chrome.tabs.get(tabId);
   } catch {
@@ -197,6 +204,28 @@ export async function openHelper(url: string, beforeLoad?: (tabId: number) => Pr
     await new Promise((r) => setTimeout(r, 100));
   }
   return waitForComplete(tab.id!, 20_000);
+}
+
+/** A new blank tab in the background (never the active one), closed by AnyMCP once unused. */
+export async function openBackgroundTab(): Promise<chrome.tabs.Tab> {
+  const tab = await chrome.tabs.create({ url: "about:blank", active: false });
+  const helpers = await getHelpers();
+  helpers[`${tab.id}`] = { tabId: tab.id!, lastUsed: Date.now() };
+  await setHelpers(helpers);
+  return tab;
+}
+
+/** The AI's background browsing tab, if it's still open. Marks it as in use. */
+export async function aiTab(): Promise<chrome.tabs.Tab | undefined> {
+  const id = (await chrome.storage.session.get(AI_TAB_KEY))[AI_TAB_KEY] as number | undefined;
+  if (id === undefined || !(await isHelperTab(id))) return undefined;
+  const tab = await chrome.tabs.get(id).catch(() => undefined);
+  if (tab) await touchHelper(id);
+  return tab;
+}
+
+export async function setAiTab(tabId: number): Promise<void> {
+  await chrome.storage.session.set({ [AI_TAB_KEY]: tabId });
 }
 
 export async function touchHelper(tabId: number): Promise<void> {

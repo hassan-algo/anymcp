@@ -23,6 +23,8 @@ export const TRUSTED_EXTENSION_IDS = ["lakpncfioijpankpckjhpmpielbempik"];
 
 /** Close code the gateway uses when the pairing token is wrong. */
 export const CLOSE_AUTH_FAILED = 4001;
+/** The gateway is handing its port to a newer gateway: reconnect right away. */
+export const CLOSE_HANDOVER = 4002;
 
 // ---- Shared shapes ----------------------------------------------------------
 

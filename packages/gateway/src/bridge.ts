@@ -8,6 +8,7 @@ import { timingSafeEqual } from "node:crypto";
 import WebSocket, { WebSocketServer } from "ws";
 import {
   CLOSE_AUTH_FAILED,
+  CLOSE_HANDOVER,
   TRUSTED_EXTENSION_IDS,
   type ClientToGateway,
   type ExtensionMethods,
@@ -33,6 +34,11 @@ class RpcLink {
     readonly ws: WebSocket,
     private readonly onRequest: RequestHandler,
   ) {}
+
+  /** Waiting for answers to requests this side sent. */
+  get busy(): boolean {
+    return this.pending.size > 0;
+  }
 
   request(method: string, params: unknown, timeoutMs: number): Promise<unknown> {
     const id = this.nextId++;
@@ -108,6 +114,8 @@ export interface BridgeOptions {
   handleLeaderRequest?: RequestHandler;
   /** This gateway became the leader, or stopped being it. */
   onRoleChange?: (role: "leader" | "follower") => void;
+  /** Leader: true while work is running that a handover would cut off (e.g. a server call). */
+  isBusy?: () => boolean;
 }
 
 export class Bridge {
@@ -118,6 +126,10 @@ export class Bridge {
   private leaderLink: RpcLink | null = null;
   private retryTimer: NodeJS.Timeout | undefined;
   private closed = false;
+  /** Requests from the extension or other gateways being answered right now. */
+  private incoming = 0;
+  private handoverTimer: NodeJS.Timeout | undefined;
+  private handoverPeer: RpcLink | null = null;
 
   constructor(private readonly opts: BridgeOptions) {}
 
@@ -139,6 +151,7 @@ export class Bridge {
   close(): void {
     this.closed = true;
     clearTimeout(this.retryTimer);
+    clearInterval(this.handoverTimer);
     this.wss?.close();
     for (const c of this.wss?.clients ?? []) c.terminate();
     this.leaderLink?.ws.close();
@@ -210,19 +223,20 @@ export class Bridge {
         kind = hello.role === "peer" && !origin ? "peer" : "extension";
         if (kind === "extension") {
           const old = this.extension;
-          link = new RpcLink(ws, (m, p) => this.opts.handleGatewayMethod(m, p));
+          link = new RpcLink(ws, (m, p) => this.track(() => this.opts.handleGatewayMethod(m, p)));
           this.extension = link;
           old?.ws.close(1000, "replaced by a newer connection");
           this.opts.log(`Browser extension connected (v${hello.version ?? (msg as { extensionVersion?: string }).extensionVersion ?? "?"}).`);
           this.opts.onExtensionChange?.(true);
         } else {
-          const peer: RpcLink = new RpcLink(ws, (m, p) => this.handlePeerRequest(m, p, peer));
+          const peer: RpcLink = new RpcLink(ws, (m, p) => this.track(() => this.handlePeerRequest(m, p, peer)));
           link = peer;
           this.peers.add(link);
-          // A gateway with newer code joined: hand it the port so the extension gets the new code.
+          // A gateway with newer code joined: hand it the port so the extension gets the new code,
+          // but only once nothing is running, so no call or browser action gets cut off.
           if ((hello.build ?? 0) > (this.opts.build ?? 0)) {
             send(ws, { type: "welcome", gatewayVersion: this.opts.version });
-            this.stepDown();
+            this.handoverWhenIdle(peer);
             return;
           }
         }
@@ -280,16 +294,57 @@ export class Bridge {
     return a.length === b.length && timingSafeEqual(a, b);
   }
 
+  private async track<T>(work: () => Promise<T>): Promise<T> {
+    this.incoming++;
+    try {
+      return await work();
+    } finally {
+      this.incoming--;
+    }
+  }
+
+  private isBusy(): boolean {
+    return Boolean(this.extension?.busy || this.incoming > 0 || [...this.peers].some((p) => p.busy) || this.opts.isBusy?.());
+  }
+
+  /** Hands the port to a newer gateway once nothing has been running for two seconds. */
+  private handoverWhenIdle(peer: RpcLink): void {
+    this.handoverPeer = peer;
+    if (this.handoverTimer) return;
+    this.opts.log("A newer AnyMCP gateway started; handing over to it once nothing is running.");
+    let quiet = 0;
+    this.handoverTimer = setInterval(() => {
+      if (!this.handoverPeer || !this.peers.has(this.handoverPeer)) {
+        // The newer gateway went away before we handed over.
+        clearInterval(this.handoverTimer);
+        this.handoverTimer = undefined;
+        this.handoverPeer = null;
+        return;
+      }
+      quiet = this.isBusy() ? 0 : quiet + 1;
+      if (quiet >= 2) this.stepDown();
+    }, 1_000);
+  }
+
   /** Gives up the port to a newer gateway, then joins it. */
   private stepDown(): void {
+    clearInterval(this.handoverTimer);
+    this.handoverTimer = undefined;
+    const next = this.handoverPeer;
+    this.handoverPeer = null;
     if (this.role !== "leader") return;
-    this.opts.log("A newer AnyMCP gateway started; handing over to it.");
+    this.opts.log("Handing over to the newer AnyMCP gateway.");
     const wss = this.wss;
+    const extension = this.extension;
     this.wss = null;
     this.extension = null;
     this.role = "follower";
     this.opts.onRoleChange?.("follower");
-    for (const c of wss?.clients ?? []) c.terminate();
+    // The extension and the newer gateway are told it's a handover, so they reconnect at once
+    // (the extension without showing "disconnected"). Other gateways rejoin as usual.
+    extension?.ws.close(CLOSE_HANDOVER, "handing over to a newer gateway");
+    next?.ws.close(CLOSE_HANDOVER, "take over the port");
+    for (const c of wss?.clients ?? []) if (c !== extension?.ws && c !== next?.ws) c.terminate();
     wss?.close();
     this.opts.onExtensionChange?.(false);
     // Wait so the newer gateway (which retries every 3s) gets the port first.
@@ -324,17 +379,21 @@ export class Bridge {
       link?.failAll("Lost the connection to the main AnyMCP gateway.");
       if (this.closed) return;
       if (code === CLOSE_AUTH_FAILED) this.opts.log("The running gateway refused our pairing token (different ANYMCP_HOME?).");
-      this.retryTimer = setTimeout(() => void this.takeOver(), 3_000);
+      // Handed the port: take it right away. Otherwise give the chosen gateway a head start.
+      this.retryTimer = setTimeout(() => void this.takeOver(code === CLOSE_HANDOVER ? 3 : 0), code === CLOSE_HANDOVER ? 300 : 3_000);
     });
   }
 
-  private async takeOver(): Promise<void> {
+  /** Listens on the port. `retries`: tries again shortly while the old leader is still letting go. */
+  private async takeOver(retries = 0): Promise<void> {
     if (this.closed) return;
     try {
       await this.listen();
       this.opts.log("Took over the gateway port; waiting for the browser extension.");
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "EADDRINUSE") this.follow();
+      if ((err as NodeJS.ErrnoException).code === "EADDRINUSE" && retries > 0) {
+        this.retryTimer = setTimeout(() => void this.takeOver(retries - 1), 300);
+      } else if ((err as NodeJS.ErrnoException).code === "EADDRINUSE") this.follow();
       else {
         this.opts.log(`Could not take over the port: ${(err as Error).message}`);
         this.retryTimer = setTimeout(() => void this.takeOver(), 3_000);

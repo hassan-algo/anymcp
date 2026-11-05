@@ -33,9 +33,12 @@ import { toolsFromScan } from "../scantools.js";
 import { scanTab } from "./scan.js";
 import { openSetupWindow } from "./setup.js";
 import {
+  aiTab,
   closeHelper,
   getTab,
+  openBackgroundTab,
   openHelper,
+  setAiTab,
   run,
   settle,
   sleep,
@@ -182,14 +185,17 @@ export const handlers: Handlers = {
       throw new Error(`"${url}" is not a valid URL.`);
     }
     if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("Only http(s) URLs can be opened.");
+    // Pages open in AnyMCP's own background tab, never in the tab the user is looking at,
+    // unless the AI names a tab. That tab closes after a few minutes unused.
     let tab: chrome.tabs.Tab;
-    const current = newTab ? undefined : await getTab(tabId).catch(() => undefined);
+    const current = newTab ? undefined : tabId !== undefined ? await getTab(tabId) : await aiTab();
     if (current?.id !== undefined) {
       // Start learning first, so the recorder is ready when the new page loads.
       await noteAiAction(current.id, current.url, u.href);
       tab = (await chrome.tabs.update(current.id, { url: u.href })) ?? current;
     } else {
-      tab = await chrome.tabs.create({ url: "about:blank", active: true });
+      tab = await openBackgroundTab();
+      await setAiTab(tab.id!);
       await noteAiAction(tab.id!, undefined, u.href);
       tab = (await chrome.tabs.update(tab.id!, { url: u.href })) ?? tab;
     }
@@ -205,10 +211,20 @@ export const handlers: Handlers = {
     if (!(await chrome.permissions.contains({ origins: ["<all_urls>"] }))) {
       throw new Error('Chrome only allows screenshots when AnyMCP has "Allow on all sites" access. Turn it on in the AnyMCP side panel.');
     }
-    await chrome.tabs.update(tab.id, { active: true });
-    await chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
-    await sleep(150);
-    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+    // Chrome can only capture the tab showing in its window: show it for a moment, then switch
+    // straight back to the tab the user was on. The window isn't brought to the front.
+    const [shown] = await chrome.tabs.query({ active: true, windowId: tab.windowId });
+    const swap = !tab.active && shown?.id !== undefined;
+    let dataUrl: string;
+    try {
+      if (swap) {
+        await chrome.tabs.update(tab.id, { active: true });
+        await sleep(150);
+      }
+      dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+    } finally {
+      if (swap) await chrome.tabs.update(shown!.id!, { active: true }).catch(() => {});
+    }
     return { tabId: tab.id, mimeType: "image/png", data: dataUrl.replace(/^data:image\/png;base64,/, "") };
   },
 

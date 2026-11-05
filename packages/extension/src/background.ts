@@ -3,6 +3,7 @@
 
 import {
   CLOSE_AUTH_FAILED,
+  CLOSE_HANDOVER,
   DEFAULT_PORT,
   type ClientToGateway,
   type GatewayMethodName,
@@ -25,6 +26,8 @@ const VERSION = chrome.runtime.getManifest().version;
 const PING_MS = 20_000; // WebSocket activity keeps the service worker alive (Chrome 116+).
 const MAX_RETRY_MS = 30_000;
 const GATEWAY_TIMEOUT_MS = 30_000;
+/** How long a gateway handover may take before the panel shows "disconnected". */
+const HANDOVER_GRACE_MS = 15_000;
 
 let socket: WebSocket | null = null;
 let connecting = false;
@@ -33,6 +36,8 @@ let gatewayVersion: string | undefined;
 let retryMs = 1_000;
 let retryTimer: ReturnType<typeof setTimeout> | undefined;
 let pingTimer: ReturnType<typeof setInterval> | undefined;
+/** Set while a gateway hands over to a newer one: reconnect quickly and keep the status as is. */
+let handoverUntil = 0;
 
 let nextId = 1;
 const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
@@ -40,6 +45,9 @@ const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Err
 // ---- Status -----------------------------------------------------------------
 
 function setStatus(next: ConnectionStatus): void {
+  // During a handover the old gateway is gone for a moment: not worth flashing "disconnected".
+  if (next !== "connected" && next !== "auth-failed" && Date.now() < handoverUntil) return;
+  if (next === "connected") handoverUntil = 0;
   status = next;
   if (next !== "connected") gatewayVersion = undefined;
   const info: StatusInfo = { status, gatewayVersion };
@@ -100,8 +108,9 @@ async function connect(): Promise<void> {
     // running (no AI app open). A quiet fetch first checks it's there; a refused fetch isn't logged.
     if (!(await gatewayIsUp(port))) {
       setStatus("disconnected");
-      retryTimer = setTimeout(() => void connect(), retryMs);
-      retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
+      const handingOver = Date.now() < handoverUntil;
+      retryTimer = setTimeout(() => void connect(), handingOver ? 500 : retryMs);
+      if (!handingOver) retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
       return;
     }
     setStatus("connecting");
@@ -118,6 +127,17 @@ async function connect(): Promise<void> {
       if (ev.code === CLOSE_AUTH_FAILED) {
         setStatus("auth-failed"); // wait for the user to enter a token
         return;
+      }
+      if (ev.code === CLOSE_HANDOVER) {
+        // A newer gateway is taking over the port: reconnect to it right away.
+        handoverUntil = Date.now() + HANDOVER_GRACE_MS;
+        retryMs = 500;
+        setTimeout(() => {
+          // Still not welcomed by the new gateway (a welcome clears handoverUntil): show the truth.
+          if (handoverUntil === 0 || Date.now() < handoverUntil) return;
+          handoverUntil = 0;
+          setStatus(socket ? "connecting" : "disconnected");
+        }, HANDOVER_GRACE_MS + 100);
       }
       setStatus("disconnected");
       retryTimer = setTimeout(() => void connect(), retryMs);

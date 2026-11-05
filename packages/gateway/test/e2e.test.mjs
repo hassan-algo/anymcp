@@ -263,6 +263,35 @@ test("a newer gateway takes over from an older one, so the extension gets the ne
   assert.match(text(r), /Hello/);
 });
 
+test("a handover waits for running calls, so a newer gateway doesn't cut them off", async (t) => {
+  const h = await makeHome();
+  const old = await startGateway({ ...h.env, ANYMCP_BUILD: "1000" });
+  t.after(() => old.client.close());
+  await old.client.listTools();
+  let release;
+  const slow = new Promise((r) => (release = r));
+  const ext = await fakeExtension({
+    port: h.port,
+    token: h.token,
+    handlers: { read_page: async () => (await slow, pageResult) },
+  });
+  t.after(() => ext.close());
+  await waitFor(() => old.stderr().includes("extension connected"), 5_000);
+  const running = old.client.callTool({ name: "read_page", arguments: {} });
+  await new Promise((r) => setTimeout(r, 300));
+  const fresh = await startGateway({ ...h.env, ANYMCP_BUILD: "2000" });
+  t.after(() => fresh.client.close());
+  await waitFor(() => old.stderr().includes("once nothing is running"), 10_000);
+  await new Promise((r) => setTimeout(r, 3_500));
+  assert.ok(!old.stderr().includes("Handing over to the newer"), "no handover while the call is running");
+  release();
+  const r = await running;
+  assert.ok(!r.isError, text(r));
+  assert.match(text(r), /Hello/);
+  await waitFor(() => old.stderr().includes("Handing over to the newer"), 10_000);
+  await waitFor(() => fresh.stderr().includes("Took over"), 10_000);
+});
+
 test("open_url reads a page through the browser, counts it, and creates a site entry", async (t) => {
   const h = await makeHome();
   const { client } = await startGateway(h.env);
