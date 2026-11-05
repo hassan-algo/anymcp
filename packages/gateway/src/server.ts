@@ -152,10 +152,15 @@ export async function serve(): Promise<void> {
     handlePeerRequest: async (method, params, peer) => {
       const p = (params ?? {}) as { server: string; tool: string; args: Record<string, unknown> };
       if (method === "upstream_call") {
-        const owner: CallOwner = {
-          elicit: (x) => peer.request("upstream_elicit", x, 330_000) as Promise<ElicitResult>,
-          sample: (x) => peer.request("upstream_sample", x, 330_000) as Promise<CreateMessageResult>,
-        };
+        // One owner per other gateway, so its calls share a turn on the server.
+        let owner = peerOwners.get(peer);
+        if (!owner) {
+          owner = {
+            elicit: (x) => peer.request("upstream_elicit", x, 330_000) as Promise<ElicitResult>,
+            sample: (x) => peer.request("upstream_sample", x, 330_000) as Promise<CreateMessageResult>,
+          };
+          peerOwners.set(peer, owner);
+        }
         return upstream.call(p.server, p.tool, p.args ?? {}, owner);
       }
       if (method === "upstream_refresh") return upstream.refresh(p.server);
@@ -173,6 +178,10 @@ export async function serve(): Promise<void> {
   });
 
   // ---- Other MCP servers: their questions and text requests ----
+
+  /** This AI session, as the owner of its calls to other servers (one stable object). */
+  const thisSession: CallOwner = { elicit: (p) => answerElicitation(p), sample: (p) => answerSampling(p) };
+  const peerOwners = new WeakMap<object, CallOwner>();
 
   /** Answers an MCP server's question (elicitation) for this AI session. */
   async function answerElicitation(params: ElicitRequest["params"]): Promise<ElicitResult> {
@@ -236,7 +245,7 @@ export async function serve(): Promise<void> {
   }
 
   function localOwner(): CallOwner {
-    return { elicit: answerElicitation, sample: answerSampling };
+    return thisSession;
   }
 
   function refreshUncachedServers(): void {

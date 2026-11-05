@@ -73,8 +73,45 @@ export function serverProfileId(name: string): string {
 
 export class Upstream {
   private clients = new Map<string, Promise<Client>>();
-  /** Calls running on each server, newest last: their owners answer the server's requests. */
-  private inflight = new Map<string, CallOwner[]>();
+  /**
+   * Each server works for one AI session at a time, so when it asks a question mid-call there's
+   * exactly one session it can belong to. Calls from the same session run side by side; calls
+   * from other sessions wait their turn (first come, first served).
+   */
+  private lanes = new Map<string, { owner: CallOwner | null; active: number; waiting: { owner: CallOwner; go: () => void }[] }>();
+
+  private lane(name: string) {
+    let l = this.lanes.get(name);
+    if (!l) this.lanes.set(name, (l = { owner: null, active: 0, waiting: [] }));
+    return l;
+  }
+
+  private async enter(name: string, owner: CallOwner): Promise<void> {
+    const l = this.lane(name);
+    if (l.active === 0 || (l.owner === owner && !l.waiting.length)) {
+      l.owner = owner;
+      l.active++;
+      return;
+    }
+    await new Promise<void>((go) => l.waiting.push({ owner, go }));
+  }
+
+  private leave(name: string): void {
+    const l = this.lane(name);
+    l.active--;
+    if (l.active > 0) return;
+    l.owner = null;
+    const next = l.waiting[0];
+    if (!next) return;
+    // Let in the next session, with all of its calls that are waiting.
+    l.owner = next.owner;
+    for (let i = 0; i < l.waiting.length; ) {
+      if (l.waiting[i]!.owner === next.owner) {
+        l.active++;
+        l.waiting.splice(i, 1)[0]!.go();
+      } else i++;
+    }
+  }
 
   constructor(
     private readonly paths: Paths,
@@ -86,8 +123,7 @@ export class Upstream {
   ) {}
 
   private ownerFor(name: string): CallOwner {
-    const list = this.inflight.get(name);
-    const owner = list?.[list.length - 1] ?? this.defaultOwner?.();
+    const owner = this.lanes.get(name)?.owner ?? this.defaultOwner?.();
     if (!owner) throw new Error("Nobody can answer this server's request right now.");
     return owner;
   }
@@ -273,15 +309,13 @@ export class Upstream {
     owner?: CallOwner,
   ): Promise<{ content: { type: string; text?: string }[]; isError?: boolean; structuredContent?: unknown }> {
     const client = await this.connect(name);
-    const list = this.inflight.get(name) ?? [];
     const me = owner ?? this.defaultOwner?.();
-    if (me) list.push(me);
-    this.inflight.set(name, list);
+    if (me) await this.enter(name, me);
     let r;
     try {
       r = await client.callTool({ name: tool, arguments: args }, undefined, { timeout: 300_000, resetTimeoutOnProgress: true });
     } finally {
-      if (me) list.splice(list.lastIndexOf(me), 1);
+      if (me) this.leave(name);
     }
     const content = Array.isArray(r.content) ? (r.content as { type: string; text?: string }[]) : [];
     // Servers that only send structured results still need text for the AI.

@@ -13,8 +13,8 @@ const cli = (env, ...args) => execFileSync(process.execPath, [distEntry, ...args
 test("another MCP server's tools are served through the catalog, compacted and counted", async (t) => {
   const h = await makeHome();
   assert.match(cli(h.env, "server", "add", "tracker", "--", process.execPath, FAKE), /Added "tracker"/);
-  assert.match(cli(h.env, "server", "test", "tracker"), /works: 6 tool\(s\)\. That's about \d+ tokens/);
-  assert.match(cli(h.env, "server", "list"), /tracker\s+6 tools/);
+  assert.match(cli(h.env, "server", "test", "tracker"), /works: 7 tool\(s\)\. That's about \d+ tokens/);
+  assert.match(cli(h.env, "server", "list"), /tracker\s+7 tools/);
 
   const { client } = await startGateway(h.env);
   t.after(() => client.close());

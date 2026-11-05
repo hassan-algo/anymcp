@@ -22,7 +22,9 @@ export function createAskUser(deps: { bridge: Bridge; mcp: Server; log: (m: stri
     const timer = progress ? setInterval(() => progress(`Waiting for you: ${req.title}`), 15_000) : undefined;
     try {
       if (deps.bridge.connected) {
-        return await deps.bridge.call("ask_user", { ...req, timeoutMs }, timeoutMs + 15_000);
+        // The window's own timer starts when it's shown, and questions can queue behind others,
+        // so allow for a few in line. The extension always answers (closing/timeout = cancelled).
+        return await deps.bridge.call("ask_user", { ...req, timeoutMs }, Math.min(timeoutMs * 4 + 60_000, 30 * 60_000));
       }
       if (deps.mcp.getClientCapabilities()?.elicitation) {
         const choices = req.choices?.length ? req.choices : ["OK", "Cancel"];

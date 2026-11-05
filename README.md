@@ -129,7 +129,7 @@ anymcp server sampling off
 
 Remote servers are tried over Streamable HTTP first and fall back to the older SSE transport automatically (force one with `--transport sse`).
 
-**One copy of each server.** However many AI sessions you have open, only the main AnyMCP gateway (the one connected to Chrome) runs your servers; the others send their calls to it. A server's questions still go back to the session that made the call.
+**One copy of each server.** However many AI sessions you have open, only the main AnyMCP gateway (the one connected to Chrome) runs your servers; the others send their calls to it. A server's questions still go back to the session that made the call: a server works for one session at a time (calls from the same session run side by side, other sessions wait their turn), so a question always has exactly one owner.
 
 ## Token savings
 

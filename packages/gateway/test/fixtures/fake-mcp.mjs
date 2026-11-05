@@ -33,6 +33,15 @@ server.registerTool(
   },
 );
 server.registerTool(
+  "slow_confirm",
+  { description: "Wait a moment, then ask the user to confirm.", inputSchema: { label: z.string() } },
+  async ({ label }) => {
+    await new Promise((r) => setTimeout(r, 700));
+    const r = await server.server.elicitInput({ message: `Confirm ${label}?`, requestedSchema: { type: "object", properties: { reason: { type: "string" } } } });
+    return { content: [{ type: "text", text: `${label}: ${r.content?.reason}` }] };
+  },
+);
+server.registerTool(
   "summarize",
   { description: "Summarize a text using the client's model.", inputSchema: { text: z.string() } },
   async ({ text }) => {
