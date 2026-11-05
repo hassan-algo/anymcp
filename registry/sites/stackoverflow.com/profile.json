@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "id": "stackoverflow.com",
+  "name": "Stack Overflow",
+  "description": "Search Stack Overflow questions.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "dev"
+  ],
+  "origins": [
+    "https://stackoverflow.com"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "api.stackexchange.com"
+  ],
+  "tools": [
+    {
+      "name": "search_questions",
+      "title": "Search questions",
+      "description": "Search Stack Overflow questions by keyword, most relevant first. Returns title, link, score, answer count and tags.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search text"
+          },
+          "tagged": {
+            "type": "string",
+            "description": "Only questions with these tags, separated by ';', e.g. 'typescript;zod'"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Results to return (default 20)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://api.stackexchange.com/2.3/search/advanced",
+        "query": {
+          "q": "{query}",
+          "tagged": "{tagged}",
+          "pagesize": "{limit}",
+          "order": "desc",
+          "sort": "relevance",
+          "site": "stackoverflow"
+        },
+        "response": {
+          "pick": "items",
+          "fields": [
+            "title",
+            "link",
+            "score",
+            "answer_count",
+            "is_answered",
+            "tags",
+            "creation_date"
+          ]
+        }
+      }
+    }
+  ]
+}

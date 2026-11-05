@@ -1,0 +1,28 @@
+name: Registry
+
+on:
+  pull_request:
+    paths:
+      - "registry/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w @anymcp/shared
+      - name: Validate profiles, categories and lists
+        run: node packages/shared/dist/validate-registry.js registry
+      - name: Rebuild index.json
+        run: node scripts/build-registry.mjs
+      - name: index.json must be committed and up to date
+        run: |
+          git diff --exit-code -- registry/index.json || {
+            echo "::error::registry/index.json is out of date. Run 'npm run build:registry' and commit it."
+            exit 1
+          }

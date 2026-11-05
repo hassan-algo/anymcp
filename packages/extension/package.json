@@ -1,0 +1,17 @@
+{
+  "name": "@anymcp/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit -p . && node scripts/build.mjs",
+    "package": "npm run build && node scripts/package.mjs",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "devDependencies": {
+    "@anymcp/shared": "*",
+    "@types/chrome": "^0.0.300",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.8.0"
+  }
+}

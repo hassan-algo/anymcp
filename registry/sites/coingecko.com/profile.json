@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "id": "coingecko.com",
+  "name": "CoinGecko",
+  "description": "Cryptocurrency prices and coin search. Free tier, rate limited.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "finance"
+  ],
+  "origins": [
+    "https://www.coingecko.com"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "api.coingecko.com"
+  ],
+  "tools": [
+    {
+      "name": "get_prices",
+      "title": "Coin prices",
+      "description": "Current price and 24-hour change of one or more coins in one or more currencies.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "coins": {
+            "type": "string",
+            "description": "CoinGecko coin ids separated by commas, e.g. bitcoin,ethereum (use search_coins to find ids)"
+          },
+          "currencies": {
+            "type": "string",
+            "description": "Currencies separated by commas, e.g. usd,eur"
+          }
+        },
+        "required": [
+          "coins",
+          "currencies"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://api.coingecko.com/api/v3/simple/price",
+        "query": {
+          "ids": "{coins}",
+          "vs_currencies": "{currencies}",
+          "include_24hr_change": "true"
+        }
+      }
+    },
+    {
+      "name": "search_coins",
+      "title": "Search coins",
+      "description": "Find cryptocurrencies by name or symbol and get their CoinGecko ids and market cap rank.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Name or symbol, e.g. solana or SOL"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://api.coingecko.com/api/v3/search",
+        "query": {
+          "query": "{query}"
+        },
+        "response": {
+          "pick": "coins",
+          "fields": [
+            "id",
+            "name",
+            "symbol",
+            "market_cap_rank"
+          ]
+        }
+      }
+    }
+  ]
+}

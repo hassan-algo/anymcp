@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "travel-pack",
+  "name": "Travel pack",
+  "description": "Weather forecasts and place lookup for trips.",
+  "authors": [
+    "anymcp"
+  ],
+  "profiles": [
+    "open-meteo.com",
+    "openstreetmap.org"
+  ]
+}

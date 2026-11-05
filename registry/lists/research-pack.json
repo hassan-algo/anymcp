@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "research-pack",
+  "name": "Research pack",
+  "description": "Look things up: Wikipedia, arXiv papers and an English dictionary.",
+  "authors": [
+    "anymcp"
+  ],
+  "profiles": [
+    "wikipedia.org",
+    "arxiv.org",
+    "dictionaryapi.dev"
+  ]
+}

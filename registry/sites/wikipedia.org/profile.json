@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "id": "wikipedia.org",
+  "name": "Wikipedia",
+  "description": "Search English Wikipedia and read short summaries of articles.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "reference"
+  ],
+  "origins": [
+    "https://en.wikipedia.org",
+    "https://www.wikipedia.org"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "en.wikipedia.org"
+  ],
+  "tools": [
+    {
+      "name": "search_articles",
+      "title": "Search articles",
+      "description": "Search English Wikipedia articles by keyword. Returns titles, snippets and word counts.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search text"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Results to return (default 10)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://en.wikipedia.org/w/api.php",
+        "query": {
+          "action": "query",
+          "list": "search",
+          "format": "json",
+          "srsearch": "{query}",
+          "srlimit": "{limit}"
+        },
+        "response": {
+          "pick": "query.search",
+          "fields": [
+            "title",
+            "snippet",
+            "wordcount",
+            "timestamp"
+          ]
+        }
+      }
+    },
+    {
+      "name": "get_summary",
+      "title": "Article summary",
+      "description": "Get the short summary (first paragraph) of an English Wikipedia article by its exact title.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Article title, e.g. Alan Turing"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://en.wikipedia.org/api/rest_v1/page/summary/{title}",
+        "response": {
+          "fields": [
+            "title",
+            "description",
+            "extract",
+            "content_urls.desktop.page",
+            "timestamp"
+          ]
+        }
+      }
+    }
+  ]
+}

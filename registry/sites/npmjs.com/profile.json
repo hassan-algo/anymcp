@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "npmjs.com",
+  "name": "npm",
+  "description": "Search JavaScript packages on the npm registry and look up package details.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "dev"
+  ],
+  "origins": [
+    "https://www.npmjs.com"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "registry.npmjs.org"
+  ],
+  "tools": [
+    {
+      "name": "search_packages",
+      "title": "Search packages",
+      "description": "Search npm packages by keyword. Returns name, version, description, links and download counts.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search text, e.g. 'schema validation'"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Results to return (default 20)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://registry.npmjs.org/-/v1/search",
+        "query": {
+          "text": "{query}",
+          "size": "{limit}"
+        },
+        "response": {
+          "pick": "objects",
+          "fields": [
+            "package.name",
+            "package.version",
+            "package.description",
+            "package.links",
+            "downloads"
+          ]
+        }
+      }
+    },
+    {
+      "name": "get_package",
+      "title": "Package info",
+      "description": "Get the latest version of an npm package: description, license, homepage, repository and dependencies.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Package name, e.g. zod or @types/node"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://registry.npmjs.org/{name}/latest",
+        "response": {
+          "fields": [
+            "name",
+            "version",
+            "description",
+            "license",
+            "homepage",
+            "repository",
+            "dependencies",
+            "peerDependencies",
+            "engines"
+          ]
+        }
+      }
+    }
+  ]
+}

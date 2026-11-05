@@ -1,0 +1,19 @@
+{
+  "name": "anymcp-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/shared",
+    "packages/gateway",
+    "packages/extension"
+  ],
+  "scripts": {
+    "build": "npm run build -w @anymcp/shared && node scripts/build-registry.mjs && npm run build -w anymcp-gateway && npm run build -w @anymcp/extension",
+    "build:registry": "node scripts/build-registry.mjs",
+    "test": "npm test -w @anymcp/shared -w anymcp-gateway",
+    "validate:registry": "node packages/shared/dist/validate-registry.js registry && node scripts/build-registry.mjs --check",
+    "package:extension": "npm run package -w @anymcp/extension"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

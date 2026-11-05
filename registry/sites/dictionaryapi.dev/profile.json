@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "dictionaryapi.dev",
+  "name": "Free Dictionary",
+  "description": "English word definitions, pronunciations, synonyms and antonyms.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "reference"
+  ],
+  "origins": [
+    "https://dictionaryapi.dev"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "api.dictionaryapi.dev"
+  ],
+  "tools": [
+    {
+      "name": "define_word",
+      "title": "Define word",
+      "description": "Get definitions, part of speech, examples, synonyms and pronunciation of an English word. Single words only.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "word": {
+            "type": "string",
+            "description": "The word, e.g. serendipity"
+          }
+        },
+        "required": [
+          "word"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
+        "response": {
+          "fields": [
+            "word",
+            "phonetic",
+            "meanings"
+          ]
+        }
+      }
+    }
+  ]
+}

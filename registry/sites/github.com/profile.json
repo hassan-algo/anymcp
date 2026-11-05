@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "id": "github.com",
+  "name": "GitHub (public)",
+  "description": "Search public GitHub repositories and read repository details and issues. No login; limited to 60 requests per hour.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "dev"
+  ],
+  "origins": [
+    "https://github.com"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "api.github.com"
+  ],
+  "tools": [
+    {
+      "name": "search_repositories",
+      "title": "Search repositories",
+      "description": "Search public GitHub repositories. Supports GitHub search syntax like 'language:rust stars:>1000'.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query"
+          },
+          "sort": {
+            "type": "string",
+            "description": "Sort by",
+            "enum": [
+              "stars",
+              "forks",
+              "updated"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Results to return (default 30)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://api.github.com/search/repositories",
+        "query": {
+          "q": "{query}",
+          "sort": "{sort}",
+          "per_page": "{limit}"
+        },
+        "response": {
+          "pick": "items",
+          "fields": [
+            "full_name",
+            "description",
+            "html_url",
+            "stargazers_count",
+            "forks_count",
+            "language",
+            "updated_at",
+            "topics"
+          ]
+        }
+      }
+    },
+    {
+      "name": "get_repository",
+      "title": "Repository info",
+      "description": "Get details of a public GitHub repository: description, stars, language, license, default branch and open issue count.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Owner, e.g. facebook"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name, e.g. react"
+          }
+        },
+        "required": [
+          "owner",
+          "repo"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://api.github.com/repos/{owner}/{repo}",
+        "response": {
+          "fields": [
+            "full_name",
+            "description",
+            "html_url",
+            "homepage",
+            "stargazers_count",
+            "forks_count",
+            "open_issues_count",
+            "language",
+            "license.spdx_id",
+            "default_branch",
+            "topics",
+            "pushed_at"
+          ]
+        }
+      }
+    },
+    {
+      "name": "list_issues",
+      "title": "List issues",
+      "description": "List issues and pull requests of a public GitHub repository, newest first.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "state": {
+            "type": "string",
+            "description": "Issue state (default open)",
+            "enum": [
+              "open",
+              "closed",
+              "all"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Results to return (default 30)"
+          }
+        },
+        "required": [
+          "owner",
+          "repo"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://api.github.com/repos/{owner}/{repo}/issues",
+        "query": {
+          "state": "{state}",
+          "per_page": "{limit}"
+        },
+        "response": {
+          "fields": [
+            "number",
+            "title",
+            "state",
+            "html_url",
+            "user.login",
+            "labels",
+            "comments",
+            "created_at",
+            "pull_request.html_url"
+          ]
+        }
+      }
+    }
+  ]
+}

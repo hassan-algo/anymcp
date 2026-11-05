@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "arxiv.org",
+  "name": "arXiv",
+  "description": "Search scientific papers on arXiv.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "reference"
+  ],
+  "origins": [
+    "https://arxiv.org"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "export.arxiv.org"
+  ],
+  "tools": [
+    {
+      "name": "search_papers",
+      "title": "Search papers",
+      "description": "Search arXiv papers. Returns an Atom feed with titles, authors, abstracts, dates and links. Query syntax: 'all:transformer', 'ti:attention AND au:vaswani'.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "arXiv search query, e.g. all:diffusion"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Results to return (default 10)"
+          },
+          "sort": {
+            "type": "string",
+            "description": "Sort order",
+            "enum": [
+              "relevance",
+              "lastUpdatedDate",
+              "submittedDate"
+            ]
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://export.arxiv.org/api/query",
+        "query": {
+          "search_query": "{query}",
+          "max_results": "{limit}",
+          "sortBy": "{sort}"
+        },
+        "response": {
+          "maxChars": 30000
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,1184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-05T13:18:58.715Z",
+  "categories": [
+    {
+      "id": "dev",
+      "name": "Developer",
+      "description": "Code hosting, packages, docs and Q&A."
+    },
+    {
+      "id": "news",
+      "name": "News",
+      "description": "News sites and link aggregators."
+    },
+    {
+      "id": "productivity",
+      "name": "Productivity",
+      "description": "Notes, docs, tasks and calendars."
+    },
+    {
+      "id": "reference",
+      "name": "Reference",
+      "description": "Encyclopedias, dictionaries and research papers."
+    },
+    {
+      "id": "shopping",
+      "name": "Shopping",
+      "description": "Stores and price comparison."
+    },
+    {
+      "id": "travel",
+      "name": "Travel",
+      "description": "Flights, hotels and maps."
+    },
+    {
+      "id": "finance",
+      "name": "Finance",
+      "description": "Banking, markets and payments."
+    },
+    {
+      "id": "social",
+      "name": "Social",
+      "description": "Social networks and forums."
+    }
+  ],
+  "lists": [
+    {
+      "schemaVersion": 1,
+      "id": "developer-pack",
+      "name": "Developer pack",
+      "description": "Sites developers use every day: GitHub, npm, PyPI, Stack Overflow and Hacker News.",
+      "authors": [
+        "anymcp"
+      ],
+      "profiles": [
+        "github.com",
+        "npmjs.com",
+        "pypi.org",
+        "stackoverflow.com",
+        "news.ycombinator.com"
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "finance-pack",
+      "name": "Finance pack",
+      "description": "Cryptocurrency prices and coin search.",
+      "authors": [
+        "anymcp"
+      ],
+      "profiles": [
+        "coingecko.com"
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "research-pack",
+      "name": "Research pack",
+      "description": "Look things up: Wikipedia, arXiv papers and an English dictionary.",
+      "authors": [
+        "anymcp"
+      ],
+      "profiles": [
+        "wikipedia.org",
+        "arxiv.org",
+        "dictionaryapi.dev"
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "travel-pack",
+      "name": "Travel pack",
+      "description": "Weather forecasts and place lookup for trips.",
+      "authors": [
+        "anymcp"
+      ],
+      "profiles": [
+        "open-meteo.com",
+        "openstreetmap.org"
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "schemaVersion": 1,
+      "id": "arxiv.org",
+      "name": "arXiv",
+      "description": "Search scientific papers on arXiv.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "reference"
+      ],
+      "origins": [
+        "https://arxiv.org"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "export.arxiv.org"
+      ],
+      "tools": [
+        {
+          "name": "search_papers",
+          "title": "Search papers",
+          "description": "Search arXiv papers. Returns an Atom feed with titles, authors, abstracts, dates and links. Query syntax: 'all:transformer', 'ti:attention AND au:vaswani'.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "arXiv search query, e.g. all:diffusion"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 50,
+                "description": "Results to return (default 10)"
+              },
+              "sort": {
+                "type": "string",
+                "description": "Sort order",
+                "enum": [
+                  "relevance",
+                  "lastUpdatedDate",
+                  "submittedDate"
+                ]
+              }
+            },
+            "required": [
+              "query"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://export.arxiv.org/api/query",
+            "query": {
+              "search_query": "{query}",
+              "max_results": "{limit}",
+              "sortBy": "{sort}"
+            },
+            "response": {
+              "maxChars": 30000
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "coingecko.com",
+      "name": "CoinGecko",
+      "description": "Cryptocurrency prices and coin search. Free tier, rate limited.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "finance"
+      ],
+      "origins": [
+        "https://www.coingecko.com"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "api.coingecko.com"
+      ],
+      "tools": [
+        {
+          "name": "get_prices",
+          "title": "Coin prices",
+          "description": "Current price and 24-hour change of one or more coins in one or more currencies.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "coins": {
+                "type": "string",
+                "description": "CoinGecko coin ids separated by commas, e.g. bitcoin,ethereum (use search_coins to find ids)"
+              },
+              "currencies": {
+                "type": "string",
+                "description": "Currencies separated by commas, e.g. usd,eur"
+              }
+            },
+            "required": [
+              "coins",
+              "currencies"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://api.coingecko.com/api/v3/simple/price",
+            "query": {
+              "ids": "{coins}",
+              "vs_currencies": "{currencies}",
+              "include_24hr_change": "true"
+            }
+          }
+        },
+        {
+          "name": "search_coins",
+          "title": "Search coins",
+          "description": "Find cryptocurrencies by name or symbol and get their CoinGecko ids and market cap rank.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Name or symbol, e.g. solana or SOL"
+              }
+            },
+            "required": [
+              "query"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://api.coingecko.com/api/v3/search",
+            "query": {
+              "query": "{query}"
+            },
+            "response": {
+              "pick": "coins",
+              "fields": [
+                "id",
+                "name",
+                "symbol",
+                "market_cap_rank"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "dictionaryapi.dev",
+      "name": "Free Dictionary",
+      "description": "English word definitions, pronunciations, synonyms and antonyms.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "reference"
+      ],
+      "origins": [
+        "https://dictionaryapi.dev"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "api.dictionaryapi.dev"
+      ],
+      "tools": [
+        {
+          "name": "define_word",
+          "title": "Define word",
+          "description": "Get definitions, part of speech, examples, synonyms and pronunciation of an English word. Single words only.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "word": {
+                "type": "string",
+                "description": "The word, e.g. serendipity"
+              }
+            },
+            "required": [
+              "word"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
+            "response": {
+              "fields": [
+                "word",
+                "phonetic",
+                "meanings"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "github.com",
+      "name": "GitHub (public)",
+      "description": "Search public GitHub repositories and read repository details and issues. No login; limited to 60 requests per hour.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "dev"
+      ],
+      "origins": [
+        "https://github.com"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "api.github.com"
+      ],
+      "tools": [
+        {
+          "name": "search_repositories",
+          "title": "Search repositories",
+          "description": "Search public GitHub repositories. Supports GitHub search syntax like 'language:rust stars:>1000'.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search query"
+              },
+              "sort": {
+                "type": "string",
+                "description": "Sort by",
+                "enum": [
+                  "stars",
+                  "forks",
+                  "updated"
+                ]
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "description": "Results to return (default 30)"
+              }
+            },
+            "required": [
+              "query"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://api.github.com/search/repositories",
+            "query": {
+              "q": "{query}",
+              "sort": "{sort}",
+              "per_page": "{limit}"
+            },
+            "response": {
+              "pick": "items",
+              "fields": [
+                "full_name",
+                "description",
+                "html_url",
+                "stargazers_count",
+                "forks_count",
+                "language",
+                "updated_at",
+                "topics"
+              ]
+            }
+          }
+        },
+        {
+          "name": "get_repository",
+          "title": "Repository info",
+          "description": "Get details of a public GitHub repository: description, stars, language, license, default branch and open issue count.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "owner": {
+                "type": "string",
+                "description": "Owner, e.g. facebook"
+              },
+              "repo": {
+                "type": "string",
+                "description": "Repository name, e.g. react"
+              }
+            },
+            "required": [
+              "owner",
+              "repo"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://api.github.com/repos/{owner}/{repo}",
+            "response": {
+              "fields": [
+                "full_name",
+                "description",
+                "html_url",
+                "homepage",
+                "stargazers_count",
+                "forks_count",
+                "open_issues_count",
+                "language",
+                "license.spdx_id",
+                "default_branch",
+                "topics",
+                "pushed_at"
+              ]
+            }
+          }
+        },
+        {
+          "name": "list_issues",
+          "title": "List issues",
+          "description": "List issues and pull requests of a public GitHub repository, newest first.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "owner": {
+                "type": "string",
+                "description": "Owner"
+              },
+              "repo": {
+                "type": "string",
+                "description": "Repository name"
+              },
+              "state": {
+                "type": "string",
+                "description": "Issue state (default open)",
+                "enum": [
+                  "open",
+                  "closed",
+                  "all"
+                ]
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "description": "Results to return (default 30)"
+              }
+            },
+            "required": [
+              "owner",
+              "repo"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://api.github.com/repos/{owner}/{repo}/issues",
+            "query": {
+              "state": "{state}",
+              "per_page": "{limit}"
+            },
+            "response": {
+              "fields": [
+                "number",
+                "title",
+                "state",
+                "html_url",
+                "user.login",
+                "labels",
+                "comments",
+                "created_at",
+                "pull_request.html_url"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "news.ycombinator.com",
+      "name": "Hacker News",
+      "description": "Search Hacker News stories, read the front page and open a story with its comments.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "news",
+        "dev"
+      ],
+      "origins": [
+        "https://news.ycombinator.com"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "hn.algolia.com"
+      ],
+      "tools": [
+        {
+          "name": "search_stories",
+          "title": "Search stories",
+          "description": "Full-text search of Hacker News stories, most relevant first. Returns title, link, points, comment count and story id.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search text"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 50,
+                "description": "Results to return (default 20)"
+              }
+            },
+            "required": [
+              "query"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://hn.algolia.com/api/v1/search",
+            "query": {
+              "query": "{query}",
+              "tags": "story",
+              "hitsPerPage": "{limit}"
+            },
+            "response": {
+              "pick": "hits",
+              "fields": [
+                "title",
+                "url",
+                "points",
+                "num_comments",
+                "author",
+                "created_at",
+                "objectID"
+              ]
+            }
+          }
+        },
+        {
+          "name": "front_page",
+          "title": "Front page",
+          "description": "The stories currently on the Hacker News front page, with points and comment counts.",
+          "input": {
+            "type": "object",
+            "properties": {}
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://hn.algolia.com/api/v1/search",
+            "query": {
+              "tags": "front_page",
+              "hitsPerPage": "30"
+            },
+            "response": {
+              "pick": "hits",
+              "fields": [
+                "title",
+                "url",
+                "points",
+                "num_comments",
+                "author",
+                "objectID"
+              ]
+            }
+          }
+        },
+        {
+          "name": "get_item",
+          "title": "Get story or comment",
+          "description": "Get a Hacker News story or comment by id, including its full comment tree (truncated for long threads).",
+          "input": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Item id, e.g. the objectID from search_stories"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://hn.algolia.com/api/v1/items/{id}",
+            "response": {
+              "maxChars": 40000
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "npmjs.com",
+      "name": "npm",
+      "description": "Search JavaScript packages on the npm registry and look up package details.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "dev"
+      ],
+      "origins": [
+        "https://www.npmjs.com"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "registry.npmjs.org"
+      ],
+      "tools": [
+        {
+          "name": "search_packages",
+          "title": "Search packages",
+          "description": "Search npm packages by keyword. Returns name, version, description, links and download counts.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search text, e.g. 'schema validation'"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "description": "Results to return (default 20)"
+              }
+            },
+            "required": [
+              "query"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://registry.npmjs.org/-/v1/search",
+            "query": {
+              "text": "{query}",
+              "size": "{limit}"
+            },
+            "response": {
+              "pick": "objects",
+              "fields": [
+                "package.name",
+                "package.version",
+                "package.description",
+                "package.links",
+                "downloads"
+              ]
+            }
+          }
+        },
+        {
+          "name": "get_package",
+          "title": "Package info",
+          "description": "Get the latest version of an npm package: description, license, homepage, repository and dependencies.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Package name, e.g. zod or @types/node"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://registry.npmjs.org/{name}/latest",
+            "response": {
+              "fields": [
+                "name",
+                "version",
+                "description",
+                "license",
+                "homepage",
+                "repository",
+                "dependencies",
+                "peerDependencies",
+                "engines"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "open-meteo.com",
+      "name": "Open-Meteo weather",
+      "description": "Find places and get current weather and multi-day forecasts. Free, no key.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "travel"
+      ],
+      "origins": [
+        "https://open-meteo.com"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "geocoding-api.open-meteo.com",
+        "api.open-meteo.com"
+      ],
+      "tools": [
+        {
+          "name": "find_place",
+          "title": "Find place",
+          "description": "Find a city or place by name and get its latitude, longitude, country and timezone. Use before get_forecast.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Place name, e.g. Dubai"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "description": "Results to return (default 10)"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://geocoding-api.open-meteo.com/v1/search",
+            "query": {
+              "name": "{name}",
+              "count": "{limit}"
+            },
+            "response": {
+              "pick": "results",
+              "fields": [
+                "name",
+                "country",
+                "admin1",
+                "latitude",
+                "longitude",
+                "timezone",
+                "population"
+              ]
+            }
+          }
+        },
+        {
+          "name": "get_forecast",
+          "title": "Weather forecast",
+          "description": "Current weather and daily forecast (max/min temperature in °C, precipitation, weather code) for a latitude/longitude.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "description": "Latitude"
+              },
+              "longitude": {
+                "type": "number",
+                "description": "Longitude"
+              },
+              "days": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 16,
+                "description": "Forecast days (default 7)"
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://api.open-meteo.com/v1/forecast",
+            "query": {
+              "latitude": "{latitude}",
+              "longitude": "{longitude}",
+              "forecast_days": "{days}",
+              "timezone": "auto",
+              "current": "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m",
+              "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max"
+            },
+            "response": {
+              "fields": [
+                "timezone",
+                "current",
+                "current_units",
+                "daily",
+                "daily_units"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "openstreetmap.org",
+      "name": "OpenStreetMap",
+      "description": "Look up addresses and places on OpenStreetMap (Nominatim). Light use only: about one request per second.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "travel"
+      ],
+      "origins": [
+        "https://www.openstreetmap.org"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "nominatim.openstreetmap.org"
+      ],
+      "tools": [
+        {
+          "name": "search_places",
+          "title": "Search places",
+          "description": "Find places, addresses or landmarks by name and get their coordinates and full address.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "What to find, e.g. 'Eiffel Tower' or '10 Downing Street, London'"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 40,
+                "description": "Results to return (default 5)"
+              }
+            },
+            "required": [
+              "query"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://nominatim.openstreetmap.org/search",
+            "query": {
+              "q": "{query}",
+              "format": "jsonv2",
+              "limit": "{limit}"
+            },
+            "response": {
+              "fields": [
+                "name",
+                "display_name",
+                "lat",
+                "lon",
+                "category",
+                "type"
+              ]
+            }
+          }
+        },
+        {
+          "name": "reverse_geocode",
+          "title": "Address of coordinates",
+          "description": "Get the address of a latitude/longitude.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "description": "Latitude"
+              },
+              "longitude": {
+                "type": "number",
+                "description": "Longitude"
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://nominatim.openstreetmap.org/reverse",
+            "query": {
+              "lat": "{latitude}",
+              "lon": "{longitude}",
+              "format": "jsonv2"
+            },
+            "response": {
+              "fields": [
+                "name",
+                "display_name",
+                "address",
+                "lat",
+                "lon"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "pypi.org",
+      "name": "PyPI",
+      "description": "Look up Python packages on the Python Package Index.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "dev"
+      ],
+      "origins": [
+        "https://pypi.org"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "pypi.org"
+      ],
+      "tools": [
+        {
+          "name": "get_package",
+          "title": "Package info",
+          "description": "Get details of a Python package on PyPI: latest version, summary, license, required Python version and dependencies.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Package name, e.g. requests"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://pypi.org/pypi/{name}/json",
+            "response": {
+              "pick": "info",
+              "fields": [
+                "name",
+                "version",
+                "summary",
+                "license",
+                "license_expression",
+                "requires_python",
+                "requires_dist",
+                "home_page",
+                "project_urls"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "stackoverflow.com",
+      "name": "Stack Overflow",
+      "description": "Search Stack Overflow questions.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "dev"
+      ],
+      "origins": [
+        "https://stackoverflow.com"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "api.stackexchange.com"
+      ],
+      "tools": [
+        {
+          "name": "search_questions",
+          "title": "Search questions",
+          "description": "Search Stack Overflow questions by keyword, most relevant first. Returns title, link, score, answer count and tags.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search text"
+              },
+              "tagged": {
+                "type": "string",
+                "description": "Only questions with these tags, separated by ';', e.g. 'typescript;zod'"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "description": "Results to return (default 20)"
+              }
+            },
+            "required": [
+              "query"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://api.stackexchange.com/2.3/search/advanced",
+            "query": {
+              "q": "{query}",
+              "tagged": "{tagged}",
+              "pagesize": "{limit}",
+              "order": "desc",
+              "sort": "relevance",
+              "site": "stackoverflow"
+            },
+            "response": {
+              "pick": "items",
+              "fields": [
+                "title",
+                "link",
+                "score",
+                "answer_count",
+                "is_answered",
+                "tags",
+                "creation_date"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "wikipedia.org",
+      "name": "Wikipedia",
+      "description": "Search English Wikipedia and read short summaries of articles.",
+      "version": "0.1.0",
+      "authors": [
+        "anymcp"
+      ],
+      "categories": [
+        "reference"
+      ],
+      "origins": [
+        "https://en.wikipedia.org",
+        "https://www.wikipedia.org"
+      ],
+      "auth": "none",
+      "allowedHosts": [
+        "en.wikipedia.org"
+      ],
+      "tools": [
+        {
+          "name": "search_articles",
+          "title": "Search articles",
+          "description": "Search English Wikipedia articles by keyword. Returns titles, snippets and word counts.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search text"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 50,
+                "description": "Results to return (default 10)"
+              }
+            },
+            "required": [
+              "query"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://en.wikipedia.org/w/api.php",
+            "query": {
+              "action": "query",
+              "list": "search",
+              "format": "json",
+              "srsearch": "{query}",
+              "srlimit": "{limit}"
+            },
+            "response": {
+              "pick": "query.search",
+              "fields": [
+                "title",
+                "snippet",
+                "wordcount",
+                "timestamp"
+              ]
+            }
+          }
+        },
+        {
+          "name": "get_summary",
+          "title": "Article summary",
+          "description": "Get the short summary (first paragraph) of an English Wikipedia article by its exact title.",
+          "input": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Article title, e.g. Alan Turing"
+              }
+            },
+            "required": [
+              "title"
+            ]
+          },
+          "mutates": false,
+          "action": {
+            "kind": "http",
+            "method": "GET",
+            "url": "https://en.wikipedia.org/api/rest_v1/page/summary/{title}",
+            "response": {
+              "fields": [
+                "title",
+                "description",
+                "extract",
+                "content_urls.desktop.page",
+                "timestamp"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

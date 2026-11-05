@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "id": "openstreetmap.org",
+  "name": "OpenStreetMap",
+  "description": "Look up addresses and places on OpenStreetMap (Nominatim). Light use only: about one request per second.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "travel"
+  ],
+  "origins": [
+    "https://www.openstreetmap.org"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "nominatim.openstreetmap.org"
+  ],
+  "tools": [
+    {
+      "name": "search_places",
+      "title": "Search places",
+      "description": "Find places, addresses or landmarks by name and get their coordinates and full address.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "What to find, e.g. 'Eiffel Tower' or '10 Downing Street, London'"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 40,
+            "description": "Results to return (default 5)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://nominatim.openstreetmap.org/search",
+        "query": {
+          "q": "{query}",
+          "format": "jsonv2",
+          "limit": "{limit}"
+        },
+        "response": {
+          "fields": [
+            "name",
+            "display_name",
+            "lat",
+            "lon",
+            "category",
+            "type"
+          ]
+        }
+      }
+    },
+    {
+      "name": "reverse_geocode",
+      "title": "Address of coordinates",
+      "description": "Get the address of a latitude/longitude.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "description": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Longitude"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://nominatim.openstreetmap.org/reverse",
+        "query": {
+          "lat": "{latitude}",
+          "lon": "{longitude}",
+          "format": "jsonv2"
+        },
+        "response": {
+          "fields": [
+            "name",
+            "display_name",
+            "address",
+            "lat",
+            "lon"
+          ]
+        }
+      }
+    }
+  ]
+}

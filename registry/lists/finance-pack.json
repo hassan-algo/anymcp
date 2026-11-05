@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "finance-pack",
+  "name": "Finance pack",
+  "description": "Cryptocurrency prices and coin search.",
+  "authors": [
+    "anymcp"
+  ],
+  "profiles": [
+    "coingecko.com"
+  ]
+}

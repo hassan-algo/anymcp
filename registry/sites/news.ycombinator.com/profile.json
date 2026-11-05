@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "id": "news.ycombinator.com",
+  "name": "Hacker News",
+  "description": "Search Hacker News stories, read the front page and open a story with its comments.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "news",
+    "dev"
+  ],
+  "origins": [
+    "https://news.ycombinator.com"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "hn.algolia.com"
+  ],
+  "tools": [
+    {
+      "name": "search_stories",
+      "title": "Search stories",
+      "description": "Full-text search of Hacker News stories, most relevant first. Returns title, link, points, comment count and story id.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search text"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Results to return (default 20)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://hn.algolia.com/api/v1/search",
+        "query": {
+          "query": "{query}",
+          "tags": "story",
+          "hitsPerPage": "{limit}"
+        },
+        "response": {
+          "pick": "hits",
+          "fields": [
+            "title",
+            "url",
+            "points",
+            "num_comments",
+            "author",
+            "created_at",
+            "objectID"
+          ]
+        }
+      }
+    },
+    {
+      "name": "front_page",
+      "title": "Front page",
+      "description": "The stories currently on the Hacker News front page, with points and comment counts.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://hn.algolia.com/api/v1/search",
+        "query": {
+          "tags": "front_page",
+          "hitsPerPage": "30"
+        },
+        "response": {
+          "pick": "hits",
+          "fields": [
+            "title",
+            "url",
+            "points",
+            "num_comments",
+            "author",
+            "objectID"
+          ]
+        }
+      }
+    },
+    {
+      "name": "get_item",
+      "title": "Get story or comment",
+      "description": "Get a Hacker News story or comment by id, including its full comment tree (truncated for long threads).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Item id, e.g. the objectID from search_stories"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://hn.algolia.com/api/v1/items/{id}",
+        "response": {
+          "maxChars": 40000
+        }
+      }
+    }
+  ]
+}

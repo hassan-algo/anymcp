@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "pypi.org",
+  "name": "PyPI",
+  "description": "Look up Python packages on the Python Package Index.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "dev"
+  ],
+  "origins": [
+    "https://pypi.org"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "pypi.org"
+  ],
+  "tools": [
+    {
+      "name": "get_package",
+      "title": "Package info",
+      "description": "Get details of a Python package on PyPI: latest version, summary, license, required Python version and dependencies.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Package name, e.g. requests"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://pypi.org/pypi/{name}/json",
+        "response": {
+          "pick": "info",
+          "fields": [
+            "name",
+            "version",
+            "summary",
+            "license",
+            "license_expression",
+            "requires_python",
+            "requires_dist",
+            "home_page",
+            "project_urls"
+          ]
+        }
+      }
+    }
+  ]
+}

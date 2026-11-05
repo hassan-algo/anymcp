@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "categories": [
+    {
+      "id": "dev",
+      "name": "Developer",
+      "description": "Code hosting, packages, docs and Q&A."
+    },
+    {
+      "id": "news",
+      "name": "News",
+      "description": "News sites and link aggregators."
+    },
+    {
+      "id": "productivity",
+      "name": "Productivity",
+      "description": "Notes, docs, tasks and calendars."
+    },
+    {
+      "id": "reference",
+      "name": "Reference",
+      "description": "Encyclopedias, dictionaries and research papers."
+    },
+    {
+      "id": "shopping",
+      "name": "Shopping",
+      "description": "Stores and price comparison."
+    },
+    {
+      "id": "travel",
+      "name": "Travel",
+      "description": "Flights, hotels and maps."
+    },
+    {
+      "id": "finance",
+      "name": "Finance",
+      "description": "Banking, markets and payments."
+    },
+    {
+      "id": "social",
+      "name": "Social",
+      "description": "Social networks and forums."
+    }
+  ]
+}

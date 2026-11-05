@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "developer-pack",
+  "name": "Developer pack",
+  "description": "Sites developers use every day: GitHub, npm, PyPI, Stack Overflow and Hacker News.",
+  "authors": [
+    "anymcp"
+  ],
+  "profiles": [
+    "github.com",
+    "npmjs.com",
+    "pypi.org",
+    "stackoverflow.com",
+    "news.ycombinator.com"
+  ]
+}

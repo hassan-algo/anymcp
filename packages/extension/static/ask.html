@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AnyMCP: your AI is asking</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body class="approve">
+    <div class="brand"><img src="icons/icon32.png" alt="" />AnyMCP</div>
+    <h1 id="title">Your AI is asking</h1>
+    <p id="message" class="muted">Loading…</p>
+    <form id="form" hidden>
+      <label id="label" for="answer"></label>
+      <input id="answer" type="text" autocomplete="off" spellcheck="false" />
+      <p class="foot">Never type passwords here. Sign in on the site itself.</p>
+    </form>
+    <div class="actions" id="choices"></div>
+    <p class="foot">Your AI is waiting for your answer. Closing this window cancels.</p>
+    <script src="ask.js"></script>
+  </body>
+</html>

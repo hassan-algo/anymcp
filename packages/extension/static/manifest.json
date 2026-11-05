@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "AnyMCP",
+  "version": "0.1.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsLsPtqIzA77OPhSq7+DYbWyUc7CswtPDKYyRyGUatwHQndmyghE+qubQ5u+t9QFMrpqvkGYOKQ9IrR1c1fGpazfGkAgPJVBxT5wHLH0I8FokaS4FaNtR8uJd7zJ9cJAggQGEAUmK1cBflpr7wpUXrim6Y3IzkD86I6DCogY8gvRUqeTlOk3wYC+ICGvLSOHGyLyOmefki06ZE956tZhRLt7WdmFY1pqYODtHTmMi1gHjlu552YmzyVx7Qi/9cPNH2O7T5GycNxO+k8eICA7OOO9BEhRi1Wrfkon2Octmu0QSHijy9h8+4XMkVVvbInWsf5V7XD6LKHgpyH3f8qif+wIDAQAB",
+  "description": "Turn any website into tools your AI can use, through one MCP server.",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "AnyMCP",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage",
+    "alarms",
+    "sidePanel"
+  ],
+  "optional_host_permissions": [
+    "<all_urls>"
+  ]
+}

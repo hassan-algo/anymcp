@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "id": "open-meteo.com",
+  "name": "Open-Meteo weather",
+  "description": "Find places and get current weather and multi-day forecasts. Free, no key.",
+  "version": "0.1.0",
+  "authors": [
+    "anymcp"
+  ],
+  "categories": [
+    "travel"
+  ],
+  "origins": [
+    "https://open-meteo.com"
+  ],
+  "auth": "none",
+  "allowedHosts": [
+    "geocoding-api.open-meteo.com",
+    "api.open-meteo.com"
+  ],
+  "tools": [
+    {
+      "name": "find_place",
+      "title": "Find place",
+      "description": "Find a city or place by name and get its latitude, longitude, country and timezone. Use before get_forecast.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Place name, e.g. Dubai"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Results to return (default 10)"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://geocoding-api.open-meteo.com/v1/search",
+        "query": {
+          "name": "{name}",
+          "count": "{limit}"
+        },
+        "response": {
+          "pick": "results",
+          "fields": [
+            "name",
+            "country",
+            "admin1",
+            "latitude",
+            "longitude",
+            "timezone",
+            "population"
+          ]
+        }
+      }
+    },
+    {
+      "name": "get_forecast",
+      "title": "Weather forecast",
+      "description": "Current weather and daily forecast (max/min temperature in °C, precipitation, weather code) for a latitude/longitude.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "description": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Longitude"
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 16,
+            "description": "Forecast days (default 7)"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "mutates": false,
+      "action": {
+        "kind": "http",
+        "method": "GET",
+        "url": "https://api.open-meteo.com/v1/forecast",
+        "query": {
+          "latitude": "{latitude}",
+          "longitude": "{longitude}",
+          "forecast_days": "{days}",
+          "timezone": "auto",
+          "current": "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m",
+          "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max"
+        },
+        "response": {
+          "fields": [
+            "timezone",
+            "current",
+            "current_units",
+            "daily",
+            "daily_units"
+          ]
+        }
+      }
+    }
+  ]
+}
