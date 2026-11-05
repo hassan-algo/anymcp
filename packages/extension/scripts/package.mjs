@@ -8,6 +8,18 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const dist = path.join(root, "dist");
 const out = path.join(root, "anymcp-extension.zip");
 fs.rmSync(out, { force: true });
-// Source maps aren't needed in the store build.
-execFileSync("zip", ["-r", "-q", "-X", out, ".", "-x", "*.map", "-x", ".DS_Store"], { cwd: dist, stdio: "inherit" });
+// The Chrome Web Store refuses a manifest with "key" (it gives the extension its own key and ID),
+// so the store copy leaves it out. Local builds keep it for their fixed ID.
+const stage = fs.mkdtempSync(path.join(root, ".store-"));
+try {
+  fs.cpSync(dist, stage, { recursive: true });
+  const manifestFile = path.join(stage, "manifest.json");
+  const manifest = JSON.parse(fs.readFileSync(manifestFile, "utf8"));
+  delete manifest.key;
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2) + "\n");
+  // Source maps aren't needed in the store build.
+  execFileSync("zip", ["-r", "-q", "-X", out, ".", "-x", "*.map", "-x", ".DS_Store"], { cwd: stage, stdio: "inherit" });
+} finally {
+  fs.rmSync(stage, { recursive: true, force: true });
+}
 console.log(`Wrote ${path.relative(process.cwd(), out)} (${Math.round(fs.statSync(out).size / 1024)} KB)`);

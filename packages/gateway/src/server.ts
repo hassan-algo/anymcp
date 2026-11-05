@@ -37,6 +37,7 @@ import { Catalog, type CatalogEntry, type SearchHit } from "./catalog.js";
 import { getPaths, loadSettings, loadState, saveSettings, updateState } from "./config.js";
 import { errorResult, Executor, textResult, untrusted, type ToolResult } from "./executor.js";
 import { CantAskError, callContext, createAskUser } from "./ask.js";
+import { discoverAppServers, importServers, rememberAnswer, removeFromApps, worthAsking } from "./appservers.js";
 import { recordToolHealth } from "./health.js";
 import { Upstream, type CallOwner } from "./upstream.js";
 import { sampleWithClaude, type McpSamplingRequest } from "./sampling.js";
@@ -175,7 +176,58 @@ export async function serve(): Promise<void> {
       if (role === "follower") void upstream.closeAll();
       else refreshUncachedServers();
     },
+    onExtensionChange: (up) => {
+      if (up) void autoImport().catch((err) => log(`Import check failed: ${(err as Error).message}`));
+    },
   });
+
+  // ---- MCP servers already set up in the user's AI apps ----
+
+  let importAsked = false;
+  /**
+   * Imports the MCP servers found in the user's apps (adding a server they already run is safe),
+   * then asks once whether to remove them from those apps so their tools aren't loaded twice.
+   */
+  async function autoImport(opts: { ask?: boolean; remove?: boolean } = {}): Promise<string> {
+    const found = discoverAppServers(upstream);
+    if (!found.length) return "No other MCP servers found in Claude Code, Claude Desktop or Cursor (user-level settings).";
+    const added = importServers(upstream, found);
+    const imported = found.filter((f) => added.includes(f.name));
+    if (!imported.length) return "Found MCP servers in your apps, but none could be imported.";
+    log(`Imported MCP servers from your apps: ${added.join(", ")}.`);
+    catalog.setExternal(upstream.profiles());
+    if (bridge.role !== "follower") refreshUncachedServers();
+    const apps = [...new Set(imported.map((f) => f.app))].join(", ");
+    const lines = [`AnyMCP now also runs ${added.join(", ")} (found in ${apps}). Their tools are in search_tools.`];
+
+    let remove = opts.remove ?? false;
+    const askable = worthAsking(paths, imported);
+    if (opts.remove === undefined && opts.ask !== false && askable.length && !importAsked) {
+      importAsked = true;
+      try {
+        const r = await askUser({
+          title: `AnyMCP now runs ${askable.length} more MCP server${askable.length === 1 ? "" : "s"}`,
+          message:
+            `Found in ${apps}: ${askable.map((f) => f.rawName).join(", ")}. AnyMCP runs them now, so their tool ` +
+            `definitions stay out of every conversation.\n\nRemove them from your apps so their tools aren't loaded twice? ` +
+            `A backup of each settings file is kept.`,
+          choices: ["Remove from my apps", "Keep both", "Don't ask again"],
+        });
+        if (r.choice === "Remove from my apps") remove = true;
+        else if (r.choice === "Don't ask again") rememberAnswer(paths, askable, "never");
+        else rememberAnswer(paths, askable, "later");
+      } catch (err) {
+        if (!(err instanceof CantAskError)) throw err;
+      }
+    }
+    if (remove) {
+      const changed = removeFromApps(imported);
+      if (changed.length) lines.push(`Removed them from ${apps} (backups saved next to each file as .anymcp-backup). Restart those apps to stop loading them twice.`);
+    } else {
+      lines.push(`They're still set up in ${apps} too; remove them there (or call import_mcp_servers with remove_from_apps) so their tools aren't loaded twice.`);
+    }
+    return lines.join("\n");
+  }
 
   // ---- Other MCP servers: their questions and text requests ----
 
@@ -844,6 +896,16 @@ export async function serve(): Promise<void> {
       },
     },
     {
+      name: "import_mcp_servers",
+      title: "Import my MCP servers",
+      description:
+        "Move the MCP servers set up in the user's AI apps (Claude Code, Claude Desktop, Cursor) behind AnyMCP, so their " +
+        "tool definitions stay out of every conversation. Imports them, then asks the user whether to remove them from " +
+        "the apps (or pass remove_from_apps).",
+      inputSchema: { type: "object", properties: { remove_from_apps: { type: "boolean", description: "Remove them from the apps' settings (a backup is kept)" } } },
+      run: async ({ remove_from_apps }) => textResult(await autoImport({ ...(typeof remove_from_apps === "boolean" ? { remove: remove_from_apps } : {}) })),
+    },
+    {
       name: "token_savings",
       title: "Token savings",
       description: "How many tokens AnyMCP has saved: what sites sent vs what the AI received, per site, and the tool-list saving.",
@@ -1181,6 +1243,8 @@ export async function serve(): Promise<void> {
       .filter((e) => e.source === "mcp")
       .reduce((n, e) => n + definitionChars(e.profile.id, e.profile.tools), 0);
     recordSession(paths, chars);
+    // Pick up servers from the user's apps once per gateway, if nothing else triggered it yet.
+    if (bridge.role !== "follower") setTimeout(() => void autoImport().catch((err) => log(`Import check failed: ${(err as Error).message}`)), 3_000).unref();
   };
   await mcp.connect(new StdioServerTransport());
   mcpReady = true;

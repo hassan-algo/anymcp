@@ -130,9 +130,12 @@ export async function makeHome({ localProfiles = [sessionProfile] } = {}) {
       profiles: [publicProfile, { id: "broken" }],
     }),
   );
-  const env = { ...process.env, ANYMCP_HOME: home, ANYMCP_BUNDLED_INDEX: bundled };
+  // Never read the real AI apps' settings in tests.
+  const appsHome = path.join(home, "apps-home");
+  fs.mkdirSync(appsHome, { recursive: true });
+  const env = { ...process.env, ANYMCP_HOME: home, ANYMCP_BUNDLED_INDEX: bundled, ANYMCP_APPS_HOME: appsHome };
   delete env.ANYMCP_PORT;
-  return { home, port, token, bundled, env };
+  return { home, port, token, bundled, env, appsHome };
 }
 
 /** A fake browser extension. `handlers[method](params)` answers gateway requests. */
