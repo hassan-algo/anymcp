@@ -278,7 +278,7 @@ test("open_url reads a page through the browser, counts it, and creates a site e
   assert.match(text(r), /Glasshand/);
   assert.equal(ext.calls.find((c) => c.method === "run_page").params.action.url, "https://producthunt.example/");
   const s = text(await client.callTool({ name: "token_savings", arguments: {} }));
-  assert.match(s, /Estimated total: saved ≈ 350k tokens \(100%\) across 0 API call\(s\) and 1 page read/);
+  assert.match(s, /Estimated total: saved ≈ 350k tokens \(100%\)[\s\S]*- Page reads: 1, /);
   await new Promise((r2) => setTimeout(r2, 1200));
   const found = text(await client.callTool({ name: "search_tools", arguments: { query: "producthunt" } }));
   assert.match(found, /producthunt\.example\/open_path/);

@@ -42,7 +42,7 @@ import { Upstream, type CallOwner } from "./upstream.js";
 import { sampleWithClaude, type McpSamplingRequest } from "./sampling.js";
 import { learnFromActivity, mergeIntoSite, readNotices } from "./learn.js";
 import { Pacer } from "./pacing.js";
-import { getStats, recordPageRead, recordUsage, resetStats, setListedChars, statsSummary } from "./stats.js";
+import { definitionChars, getStats, recordDescribed, recordPageRead, recordSession, recordUsage, resetStats, setListedChars, statsSummary } from "./stats.js";
 import { BUILD, VERSION } from "./version.js";
 
 export const log = (msg: string) => process.stderr.write(`[anymcp] ${msg}\n`);
@@ -1074,6 +1074,10 @@ export async function serve(): Promise<void> {
     } catch (err) {
       result = errorResult(err);
     }
+    // Showing an MCP server tool's details costs part of what keeping it out of context saved.
+    if (req.params.name === "describe_tool" && !result.isError && String((req.params.arguments as { id?: string })?.id ?? "").startsWith("mcp-")) {
+      recordDescribed(paths, result.content.reduce((n, c) => n + ("text" in c && typeof c.text === "string" ? c.text.length : 0), 0));
+    }
     const notes = [learnedNote(), !result.isError && BROWSER_TOOLS.has(req.params.name) ? siteHint(urlOf(result)) : undefined].filter(Boolean) as string[];
     if (notes.length) result = { ...result, content: [...result.content, { type: "text", text: notes.join("\n") }] };
     return result;
@@ -1162,6 +1166,14 @@ export async function serve(): Promise<void> {
   computePinned();
   if (settings.registryUrl) void catalog.syncRemote(settings.registryUrl).then(() => computePinned());
 
+  // Each AI session would otherwise load every connected MCP server's tool definitions.
+  mcp.oninitialized = () => {
+    const chars = catalog
+      .all()
+      .filter((e) => e.source === "mcp")
+      .reduce((n, e) => n + definitionChars(e.profile.id, e.profile.tools), 0);
+    recordSession(paths, chars);
+  };
   await mcp.connect(new StdioServerTransport());
   mcpReady = true;
   log(`MCP server ready (${catalog.all().length} site profiles).`);

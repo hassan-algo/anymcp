@@ -65,3 +65,25 @@ test("sampling fallback calls the Claude API with the right request, only when t
   assert.deepEqual(sent.body.messages, [{ role: "user", content: [{ type: "text", text: "Summarize: a long article" }] }]);
   assert.match(cli(h.env, "server", "sampling", "off"), /is off/);
 });
+
+test("MCP savings: trimmed responses, plus tool definitions kept out of each AI session", async (t) => {
+  const fs = await import("node:fs");
+  const h = await makeHome();
+  cli(h.env, "server", "add", "tracker", "--", process.execPath, FAKE);
+  cli(h.env, "server", "test", "tracker");
+  const { client } = await app(t, h.env);
+  await client.listTools();
+  const desc = text(await client.callTool({ name: "describe_tool", arguments: { id: "mcp-tracker/list_issues" } }));
+  await client.callTool({ name: "call_tool", arguments: { id: "mcp-tracker/list_issues", args: { repo: "a/b", limit: 30 } } });
+
+  const file = JSON.parse(fs.readFileSync(path.join(h.home, "stats.json"), "utf8"));
+  assert.equal(file.sessions, 1);
+  assert.ok(file.mcpDefinitionChars > 1000, String(file.mcpDefinitionChars));
+  assert.equal(file.mcpDescribedChars, desc.length, "what describe_tool showed is subtracted");
+
+  const s = text(await client.callTool({ name: "token_savings", arguments: {} }));
+  assert.match(s, /Other MCP servers: 1 call\(s\), responses trimmed by ≈ [\d.]+k?; their tool definitions stayed out of 1 AI session\(s\), ≈ \d+ tokens/);
+  assert.match(s, /tracker: 7 tools \(≈ \d+ tokens kept out of each conversation\), 1 call\(s\)/);
+  assert.match(s, /mcp-tracker \(MCP server\): 1 call/);
+  assert.match(s, /Estimated total: saved ≈ [1-9][\d.]*k? tokens/);
+});

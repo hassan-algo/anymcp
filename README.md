@@ -132,6 +132,8 @@ Across all 8 calls measured (these four plus four small ones), AnyMCP sent 12.5k
 - Finding a tool takes a step or two (`search_tools`, `describe_tool`). Pin a site you use often to skip this.
 - The 99.6% page figure is against raw HTML. A web-fetch tool that already returns text gets similar text.
 
+**Other MCP servers are counted too**, in two ways: their results are trimmed (what the server sent vs what your AI got), and their tool definitions stay out of every AI session. Each time an AI app connects, AnyMCP records the tool definitions it would otherwise have loaded for your servers, minus whatever the AI looks up with `describe_tool`. That's a low estimate, since apps resend tool lists with every message. The side panel and `anymcp stats` show it per server.
+
 **Your own numbers:** ask *"how many tokens has AnyMCP saved?"*, run `anymcp stats`, or open the extension's side panel.
 
 </details>

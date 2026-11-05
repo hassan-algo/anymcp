@@ -107,13 +107,17 @@ function renderSavings(): void {
   el.hidden = !connected() || !st;
   if (!st) return;
   const pages = st.pages ?? { calls: 0, htmlTokens: 0, textTokens: 0 };
-  if (!st.calls && !pages.calls) {
+  // Older gateways don't report MCP servers.
+  const mcp = st.mcp ?? { calls: 0, savedTokens: 0, sessions: 0, definitionsSavedTokens: 0, servers: [] };
+  if (!st.calls && !pages.calls && !mcp.definitionsSavedTokens) {
     put(el, h("p", { class: "savings-empty muted" }, "No savings yet"));
     return;
   }
+  const siteCalls = st.calls - mcp.calls;
   const sub = [
-    st.calls && plural(st.calls, "API call"),
+    siteCalls > 0 && plural(siteCalls, "API call"),
     pages.calls && plural(pages.calls, "page read"),
+    mcp.servers.length > 0 && plural(mcp.calls, "MCP call"),
     st.toolList.toolCount && `${fmt(st.toolList.loadedTokens)}-token tool list instead of ${fmt(st.toolList.allToolsTokens)}`,
   ].filter(Boolean);
   const head = h(
@@ -130,7 +134,7 @@ function renderSavings(): void {
     h("span", { class: "savings-sub muted small" }, sub.join(" · ")),
   );
   const rows = st.sites
-    .filter((s) => s.calls || s.pageCalls)
+    .filter((s) => (s.calls || s.pageCalls) && s.kind !== "mcp")
     .slice(0, 8)
     .map((s) =>
       h(
@@ -154,16 +158,42 @@ function renderSavings(): void {
     { class: "savings card", open: state.savingsOpen },
     head,
     h("ul", { class: "rows" }, rows),
+    mcp.servers.length > 0 && h("p", { class: "small section-label" }, "MCP servers"),
+    mcp.servers.length > 0 &&
+      h(
+        "ul",
+        { class: "rows" },
+        mcp.servers.map((sv) =>
+          h(
+            "li",
+            {},
+            h("span", { class: "site-name" }, sv.name),
+            h(
+              "span",
+              { class: "muted small" },
+              [`${plural(sv.toolCount, "tool")} kept out (≈${fmt(sv.definitionTokens)})`, sv.calls ? `${fmt(sv.savedTokens)} saved on ${plural(sv.calls, "call")}` : ""]
+                .filter(Boolean)
+                .join(" · "),
+            ),
+          ),
+        ),
+      ),
+    mcp.definitionsSavedTokens > 0 &&
+      h(
+        "p",
+        { class: "small" },
+        `MCP tool definitions kept out of ${plural(mcp.sessions, "AI session")}: ≈ ${fmt(mcp.definitionsSavedTokens)} tokens (at least: apps resend tool lists every turn).`,
+      ),
     st.toolList.toolCount > 0 &&
       h(
         "p",
         { class: "small" },
-        `Tool list: ${fmt(st.toolList.loadedTokens)} tokens in your AI's context instead of ${fmt(st.toolList.allToolsTokens)} for all ${st.toolList.toolCount} site tools.`,
+        `Tool list: ${fmt(st.toolList.loadedTokens)} tokens in your AI's context instead of ${fmt(st.toolList.allToolsTokens)} for all ${st.toolList.toolCount} site and MCP server tools.`,
       ),
     h(
       "p",
       { class: "muted small" },
-      "API savings: what sites sent vs what your AI got. Page reads are shown separately: they save versus raw HTML, not versus reading the page yourself. ≈4 characters per token.",
+      "API and MCP savings: what was sent vs what your AI got. Page reads save versus raw HTML. MCP tool definitions: what each AI session didn't have to load. ≈4 characters per token.",
     ),
   );
   details.addEventListener("toggle", () => (state.savingsOpen = details.open));

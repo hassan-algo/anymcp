@@ -31,9 +31,9 @@ test("token savings are counted per call and reported by token_savings", async (
   assert.ok(stats.listedChars > 1000, "tool list size saved for the CLI");
 
   const s = text(await client.callTool({ name: "token_savings", arguments: {} }));
-  assert.match(s, /Saved ≈ [\d.]+k tokens \(\d+%\) across 2 call/);
-  assert.match(s, /example\.com: 2 API call\(s\)/);
-  assert.match(s, /Tool list:/);
+  assert.match(s, /- Website API calls: 2, saved ≈ [\d.]+k/);
+  assert.match(s, /example\.com: 2 call\(s\), saved/);
+  assert.match(s, /Tool list now:/);
 });
 
 test("add_site opens the setup window in the browser with a normalized URL", async (t) => {
@@ -103,6 +103,6 @@ test("page reads are counted separately: HTML vs the text the AI got", async (t)
   t.after(() => ext.close());
   await client.callTool({ name: "call_tool", arguments: { id: "news.test/open_path", args: {} } });
   const s = text(await client.callTool({ name: "token_savings", arguments: {} }));
-  assert.match(s, /Page reads: 1 page\(s\), the AI got \d+ tokens of text instead of 100k of page HTML/);
+  assert.match(s, /- Page reads: 1, the AI got \d+ tokens of text instead of 100k of page HTML/);
   assert.match(s, /news\.test: 1 page read\(s\), 100k HTML → \d+ text/);
 });

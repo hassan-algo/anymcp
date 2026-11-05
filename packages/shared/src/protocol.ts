@@ -204,10 +204,34 @@ export interface UsageStats {
   returnedTokens: number;
   savedTokens: number;
   savedPercent: number;
-  /** Estimate of everything: API savings plus page reads (HTML vs text). */
+  /** Estimate of everything: API savings, page reads (HTML vs text), and MCP tool definitions kept out of context. */
   totalSavedTokens: number;
   totalPercent: number;
-  sites: { id: string; calls: number; rawTokens: number; returnedTokens: number; savedTokens: number; pageCalls: number; pageHtmlTokens: number; pageTextTokens: number }[];
+  sites: {
+    id: string;
+    /** "mcp": another MCP server connected through AnyMCP. */
+    kind: "site" | "mcp";
+    calls: number;
+    rawTokens: number;
+    returnedTokens: number;
+    savedTokens: number;
+    pageCalls: number;
+    pageHtmlTokens: number;
+    pageTextTokens: number;
+  }[];
+  /**
+   * Other MCP servers connected through AnyMCP. Two savings: their results are trimmed
+   * (savedTokens), and their tool definitions stay out of every AI conversation.
+   */
+  mcp: {
+    calls: number;
+    savedTokens: number;
+    /** AI sessions started since `since`; each one would have loaded every server's tool definitions. */
+    sessions: number;
+    /** Tool-definition tokens kept out of those sessions, minus what describe_tool showed (an estimate, on the low side). */
+    definitionsSavedTokens: number;
+    servers: { id: string; name: string; toolCount: number; definitionTokens: number; calls: number; savedTokens: number }[];
+  };
   /** Page reads (open a page, return its text): the AI got the text instead of the page's HTML. Not counted in savedTokens. */
   pages: { calls: number; htmlTokens: number; textTokens: number };
   /** Tool definitions the AI keeps in context, vs. listing every tool of every site. */
