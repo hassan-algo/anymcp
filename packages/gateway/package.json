@@ -4,19 +4,35 @@
   "description": "One MCP server for every website: search, browse and call community site tools from your AI.",
   "type": "module",
   "license": "MIT",
+  "author": "Hassan Anwar",
+  "homepage": "https://github.com/hassan-algo/anymcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hassan-algo/anymcp.git",
+    "directory": "packages/gateway"
+  },
+  "bugs": {
+    "url": "https://github.com/hassan-algo/anymcp/issues"
+  },
   "keywords": [
     "mcp",
+    "mcp-server",
     "model-context-protocol",
     "ai",
     "browser",
     "claude",
-    "tools"
+    "cursor",
+    "tools",
+    "chrome-extension"
   ],
   "bin": {
     "anymcp": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist/index.js",
+    "dist/registry-index.json",
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=20"
