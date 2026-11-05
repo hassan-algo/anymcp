@@ -78,7 +78,7 @@ claude mcp add anymcp -- npx -y anymcp-gateway
 
 **2. Install the Chrome extension** (for sites you're signed in to)
 
-Until it's on the Chrome Web Store: run `npm install && npm run build` in this repo, open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick `packages/extension/dist`. There's usually nothing to pair: the side panel's dot turns green when your AI app is open. If it says **Pairing failed**, see [The pairing token](#the-pairing-token) below.
+Until it's on the Chrome Web Store: download **`anymcp-extension-unpacked.zip`** from the [latest release](https://github.com/hassan-algo/anymcp/releases/latest) and unzip it. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the unzipped `anymcp-extension` folder. (Or build it yourself: `npm install && npm run build`, then load `packages/extension/dist`.) There's usually nothing to pair: the side panel's dot turns green when your AI app is open. If it says **Pairing failed**, see [The pairing token](#the-pairing-token) below.
 
 **3. Ask something.** *"What's the weather in Lisbon this weekend?"*
 

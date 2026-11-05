@@ -1,4 +1,4 @@
-// Zips dist/ into anymcp-extension.zip for the Chrome Web Store.
+// Zips dist/ into anymcp-extension.zip (Chrome Web Store) and anymcp-extension-unpacked.zip (GitHub releases).
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -23,3 +23,16 @@ try {
   fs.rmSync(stage, { recursive: true, force: true });
 }
 console.log(`Wrote ${path.relative(process.cwd(), out)} (${Math.round(fs.statSync(out).size / 1024)} KB)`);
+
+// A second zip for people who download it and use "Load unpacked": it keeps "key", so the
+// extension gets its fixed ID and pairs with the gateway automatically. Unzips into a folder.
+const unpacked = path.join(root, "anymcp-extension-unpacked.zip");
+fs.rmSync(unpacked, { force: true });
+const box = fs.mkdtempSync(path.join(root, ".unpacked-"));
+try {
+  fs.cpSync(dist, path.join(box, "anymcp-extension"), { recursive: true });
+  execFileSync("zip", ["-r", "-q", "-X", unpacked, "anymcp-extension", "-x", "*.map", "-x", "*.DS_Store"], { cwd: box, stdio: "inherit" });
+} finally {
+  fs.rmSync(box, { recursive: true, force: true });
+}
+console.log(`Wrote ${path.relative(process.cwd(), unpacked)} (${Math.round(fs.statSync(unpacked).size / 1024)} KB)`);
