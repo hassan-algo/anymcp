@@ -140,7 +140,7 @@ function renderSavings(): void {
       h(
         "li",
         {},
-        h("span", { class: "site-name" }, s.id),
+        h("span", { class: "site-name", title: s.id }, s.id),
         h(
           "span",
           { class: "muted small" },
@@ -167,7 +167,7 @@ function renderSavings(): void {
           h(
             "li",
             {},
-            h("span", { class: "site-name" }, sv.name),
+            h("span", { class: "site-name", title: sv.name }, sv.name),
             h(
               "span",
               { class: "muted small" },
@@ -223,7 +223,7 @@ function renderSites(): void {
         return h(
           "li",
           {},
-          h("span", { class: "site-name" }, p.id),
+          h("span", { class: "site-name", title: p.id }, p.id),
           h("span", { class: "muted small" }, [plural(p.tools.length, "tool"), tokens ? `${fmt(tokens)} saved` : ""].filter(Boolean).join(" · ")),
           origin && h("button", { class: "link", title: origin, onClick: () => void chrome.tabs.create({ url: origin }) }, "Open"),
         );

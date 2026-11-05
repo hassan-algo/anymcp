@@ -174,3 +174,32 @@ body.approve .foot { margin-top: 14px; color: var(--muted); font-size: 12px; }
 
 /* Small heading inside a card (e.g. "MCP servers" in the savings details). */
 .section-label { margin: 10px 0 2px; font-weight: 600; color: var(--muted, inherit); text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+
+/* Scrolling: long lists scroll inside their own box, and the buttons that act on them stay in view. */
+details.tools ul,
+details.sites ul.rows,
+details.savings ul.rows,
+body.approve #details {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+details.sites ul.rows { max-height: 280px; }
+details.savings ul.rows { max-height: 220px; }
+body.approve #details { max-height: 36vh; margin-right: -4px; padding-right: 4px; }
+/* Long words and addresses wrap instead of widening the window. */
+body.approve h1, body.approve #message, body.approve li, .card, ul.rows li { overflow-wrap: anywhere; }
+body.approve #message { white-space: pre-line; }
+/* Popup and setup buttons stay pinned to the bottom while the content above them scrolls. */
+body.approve .actions,
+.sticky-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--bg);
+  padding: 10px 0;
+  box-shadow: 0 -10px 12px -12px rgba(0, 0, 0, 0.35);
+}
+body.approve .actions { margin-top: 12px; }
+/* Make a scrolling details list look like a box, so it's clear there's more inside. */
+body.approve #details:not(:empty) { border-block: 1px solid var(--border); padding-block: 6px; }

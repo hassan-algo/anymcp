@@ -254,6 +254,7 @@ export function renderDraftEditor(d: Draft, opts: EditorOptions): HTMLElement {
     d.notes.length > 0 && h("div", { class: "notice warn" }, h("ul", { class: "errors", style: "color:inherit;margin:0" }, [...new Set(d.notes)].map((n) => h("li", {}, n)))),
     h("div", {}, h("h2", { style: "margin-top:6px" }, "Tools"), toolRows),
     d.errors.length > 0 && h("ul", { class: "errors" }, d.errors.map((e) => h("li", {}, e))),
-    h("div", { class: "row" }, h("button", { class: "primary", onClick: opts.onSave }, opts.saveLabel ?? "Save profile")),
+    // Stays at the bottom of the window while a long list of tools scrolls.
+    h("div", { class: "row sticky-actions" }, h("button", { class: "primary", onClick: opts.onSave }, opts.saveLabel ?? "Save profile")),
   );
 }
