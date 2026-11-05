@@ -19,7 +19,10 @@ export const DEFAULT_PORT = 17872;
  * without a pairing token: Chrome sets the Origin header itself, so other extensions and websites
  * can't pretend to be one. Add the Chrome Web Store ID here once it's published.
  */
-export const TRUSTED_EXTENSION_IDS = ["lakpncfioijpankpckjhpmpielbempik"];
+export const TRUSTED_EXTENSION_IDS = [
+  "bgcgfbimbddjmojlkbhknlihafjmmacc", // Chrome Web Store
+  "lakpncfioijpankpckjhpmpielbempik", // unpacked builds (the manifest "key")
+];
 
 /** Close code the gateway uses when the pairing token is wrong. */
 export const CLOSE_AUTH_FAILED = 4001;
