@@ -87,11 +87,11 @@ test("keepMissing leaves unfilled placeholders in place for a second pass", () =
 
 test("Gmail's unread Atom feed becomes compact entries", () => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?><feed version="0.3" xmlns="http://purl.org/atom/ns#"><title>Gmail - Inbox for me@example.com</title><tagline>New messages in your Gmail Inbox</tagline><fullcount>37</fullcount>
-<entry><title>Invoice &amp; receipt</title><summary>Thanks for your order</summary><link rel="alternate" href="https://mail.google.com/mail/u/0?account_id=me@example.com&amp;message_id=1&amp;view=conv" type="text/html" /><modified>2026-11-05T10:00:00Z</modified><issued>2026-11-05T10:00:00Z</issued><author><name>Shop</name><email>shop@example.com</email></author></entry>
+<entry><title>Invoice &amp; receipt</title><summary>Thanks for your order</summary><link rel="alternate" href="https://mail.google.com/mail/u/0?account_id=me@example.com&amp;amp;message_id=1&amp;amp;view=conv" type="text/html" /><modified>2026-11-05T10:00:00Z</modified><issued>2026-11-05T10:00:00Z</issued><author><name>Shop</name><email>shop@example.com</email></author></entry>
 <entry><title>Hello</title><summary>Hi there</summary><issued>2026-11-04T09:00:00Z</issued><author><name>Ann</name><email>ann@example.com</email></author></entry></feed>`;
   const out = JSON.parse(shapeResponse(xml, "application/atom+xml", undefined));
   assert.equal(out.count, 37);
   assert.equal(out.entries.length, 2);
-  assert.deepEqual(out.entries[0], { title: "Invoice & receipt", from: "Shop", email: "shop@example.com", summary: "Thanks for your order", date: "2026-11-05T10:00:00Z", link: "https://mail.google.com/mail/u/0?account_id=me@example.com&amp;message_id=1&amp;view=conv" });
+  assert.deepEqual(out.entries[0], { title: "Invoice & receipt", from: "Shop", email: "shop@example.com", summary: "Thanks for your order", date: "2026-11-05T10:00:00Z", link: "https://mail.google.com/mail/u/0?account_id=me@example.com&message_id=1&view=conv" });
   assert.deepEqual(parseFeed(xml).entries[1].from, "Ann");
 });

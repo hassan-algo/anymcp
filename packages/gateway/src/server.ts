@@ -827,9 +827,10 @@ export async function serve(): Promise<void> {
       name: "scan_site",
       title: "Scan a site for tools",
       description:
-        "Look for ready-made tools on the site open in a browser tab (default: the active tab): its forms, tools the " +
-        "site itself offers (WebMCP), a published API description (OpenAPI), and an official AnyMCP profile. " +
-        "New ones are added to the user's profile for that site.",
+        "Look for ready-made tools on the site open in an AnyMCP browser tab (pass tabId, or the AI's background " +
+        "tab if one is open — not the user's active tab): its forms, tools the site itself offers (WebMCP), a " +
+        "published API description (OpenAPI), and an official AnyMCP profile. New ones are added to the user's " +
+        "profile for that site.",
       inputSchema: { type: "object", properties: { tabId } },
       annotations: { openWorldHint: true },
       run: async ({ tabId: t }) => {

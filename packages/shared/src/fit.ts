@@ -181,16 +181,34 @@ export function fitJson(value: unknown, maxChars: number, depth = 0): string {
 
 // ---- Atom / RSS ----
 
-const decode = (s: string) =>
-  s
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/<[^>]+>/g, " ")
+/** One pass of common HTML entities (&amp; last so &amp;lt; works). */
+function decodeEntitiesOnce(s: string): string {
+  return s
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&#(\d+);/g, (_m, n) => String.fromCharCode(Number(n)))
-    .replace(/&amp;/g, "&")
+    .replace(/&amp;/g, "&");
+}
+
+/** Href/attribute values: loop so Gmail's double-encoded &amp;amp; becomes &. */
+function decodeHref(s: string): string {
+  let out = s;
+  for (let i = 0; i < 3; i++) {
+    const next = decodeEntitiesOnce(out);
+    if (next === out) break;
+    out = next;
+  }
+  return out;
+}
+
+const decode = (s: string) =>
+  decodeEntitiesOnce(
+    s
+      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+      .replace(/<[^>]+>/g, " "),
+  )
     .replace(/\s+/g, " ")
     .trim();
 
@@ -209,7 +227,8 @@ export function parseFeed(xml: string): Record<string, unknown> {
   const head = xml.split(/<(entry|item)[\s>]/i)[0] ?? "";
   const entries = blocks.map((b) => {
     const author = /<author[\s>]([\s\S]*?)<\/author>/i.exec(b)?.[1] ?? "";
-    const link = /<link[^>]*href="([^"]+)"/i.exec(b)?.[1] ?? tag(b, "link");
+    const href = /<link[^>]*href="([^"]+)"/i.exec(b)?.[1];
+    const link = href !== undefined ? decodeHref(href) : tag(b, "link");
     return compactJson({
       title: tag(b, "title"),
       from: tag(author, "name") ?? (author ? decode(author) : tag(b, "dc:creator")),

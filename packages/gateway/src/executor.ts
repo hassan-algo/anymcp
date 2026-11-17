@@ -179,8 +179,13 @@ export class Executor {
         res = await browser.call("run_http", { origins: profile.origins, allowedHosts: profile.allowedHosts, request }, 45_000);
         // Instagram/Facebook feature switches the page hadn't sent lately: retry with them "off"
         // (older extensions drop the whole variables field when one is missing).
+        // Skip for mutating tools: a write may have applied despite an "errors" body.
         const relay = (res.missing ?? []).filter((m) => m.startsWith("live:__relay_internal__pv__"));
-        if (relay.length && (res.status >= 400 || /missing_required_variable|"errors"\s*:/.test(res.body.slice(0, 3000)))) {
+        if (
+          !tool.mutates &&
+          relay.length &&
+          (res.status >= 400 || /missing_required_variable|"errors"\s*:/.test(res.body.slice(0, 3000)))
+        ) {
           const off = Object.fromEntries(relay.map((m) => [m, "false"]));
           const retry = fillBrowserPlaceholders(request, off, { keepMissing: true }).request;
           const second = await browser.call("run_http", { origins: profile.origins, allowedHosts: profile.allowedHosts, request: retry }, 45_000);
