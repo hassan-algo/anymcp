@@ -27,6 +27,9 @@ export const LIVE_PATTERNS: Record<string, string[]> = {
 
 /** Values computed from other values. */
 export function deriveLiveValue(name: string, known: Record<string, string | undefined>): string | undefined {
+  // Instagram/Facebook "relay provider" values are feature switches the page passes along.
+  // When the page hasn't sent one lately, "off" is accepted; leaving it out makes the query fail.
+  if (name.startsWith("__relay_internal__pv__")) return "false";
   if (name === "jazoest") {
     // Facebook's jazoest is "2" + the sum of the fb_dtsg character codes.
     const dtsg = known["fb_dtsg"];

@@ -189,6 +189,10 @@ export const handlers: Handlers = {
     // unless the AI names a tab. That tab closes after a few minutes unused.
     let tab: chrome.tabs.Tab;
     const current = newTab ? undefined : tabId !== undefined ? await getTab(tabId) : await aiTab();
+    // Only the #fragment changes (e.g. Gmail's #search/…): the page doesn't reload, it redraws.
+    const sameDoc = (a?: string) => !!a && a.split("#")[0] === u.href.split("#")[0] && a !== u.href;
+    const hashOnly = sameDoc(current?.url);
+    const before = hashOnly && current?.id !== undefined ? await run(current.id, readMain, [null, 3000]).then((r) => `${r.length}:${r.text}`).catch(() => undefined) : undefined;
     if (current?.id !== undefined) {
       // Start learning first, so the recorder is ready when the new page loads.
       await noteAiAction(current.id, current.url, u.href);
@@ -200,7 +204,18 @@ export const handlers: Handlers = {
       tab = (await chrome.tabs.update(tab.id!, { url: u.href })) ?? tab;
     }
     await sleep(100);
-    const done = await waitForComplete(tab.id!, 30_000);
+    let done = await waitForComplete(tab.id!, 30_000);
+    if (hashOnly) {
+      // Wait for the new view to replace the old one, then for it to settle.
+      const deadline = Date.now() + 6_000;
+      while (Date.now() < deadline) {
+        const now = await run(tab.id!, readMain, [null, 3000]).then((r) => `${r.length}:${r.text}`).catch(() => undefined);
+        if (now !== undefined && now !== before) break;
+        await sleep(250);
+      }
+      await waitForContent(tab.id!, null);
+      done = await chrome.tabs.get(tab.id!);
+    }
     // In case the recorder missed the first load, log the visit (no-op unless learning).
     if (done.url) await addLearnVisit(done.id!, done.url).catch(() => {});
     return toTabInfo(done);

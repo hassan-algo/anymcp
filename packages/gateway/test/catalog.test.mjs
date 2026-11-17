@@ -69,3 +69,13 @@ test("remote sync failure doesn't throw", async () => {
   assert.equal(r.ok, false);
   assert.match(r.error, /Could not download/);
 });
+
+test("the registry's Gmail tool is the top hit for unread email searches", async () => {
+  const learned = JSON.parse(fs.readFileSync(new URL("./fixtures/gmail-learned.json", import.meta.url), "utf8"));
+  await setup({ localProfiles: [learned] }); // a learned mail.google.com profile sits alongside, as on a real machine
+  const real = new lib.Catalog(lib.getPaths(), () => {}, path.resolve(import.meta.dirname, "../../../registry/index.json"));
+  real.reload();
+  for (const q of ["unread emails", "gmail list unread emails", "check my gmail inbox", "new mail"]) {
+    assert.equal(real.search(q)[0]?.id, "gmail/unread_emails", q);
+  }
+});

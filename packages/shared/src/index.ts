@@ -10,3 +10,4 @@ export * from "./privacy.js";
 export * from "./live.js";
 export * from "./sites-risk.js";
 export * from "./compact.js";
+export * from "./fit.js";

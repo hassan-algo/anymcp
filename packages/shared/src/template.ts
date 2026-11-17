@@ -261,14 +261,17 @@ export function browserPlaceholders(req: ResolvedHttpRequest): string[] {
 export function fillBrowserPlaceholders(
   req: ResolvedHttpRequest,
   values: Record<string, string | undefined>,
+  opts: { keepMissing?: boolean } = {},
 ): { request: ResolvedHttpRequest; missing: string[] } {
   const missing = new Set<string>();
+  /** Fills placeholders inside a string; undefined when one has no value (and keepMissing is off). */
   const sub = (s: string, escape: (v: string) => string = (v) => v): string | undefined => {
     let gone = false;
-    const out = s.replace(BROWSER_RE, (_m, kind: string, name: string) => {
+    const out = s.replace(BROWSER_RE, (m, kind: string, name: string) => {
       const v = values[`${kind}:${name}`];
       if (v === undefined) {
         missing.add(`${kind}:${name}`);
+        if (opts.keepMissing) return m;
         gone = true;
         return "";
       }
@@ -276,11 +279,33 @@ export function fillBrowserPlaceholders(
     });
     return gone ? undefined : out;
   };
+  /** A JSON string that is exactly one placeholder: true/false/null/numbers go in as JSON values. */
+  const exact = (s: string): unknown => {
+    const m = /^\{\$(cookie|meta|live):([^}]+)\}$/.exec(s);
+    if (!m) return sub(s) ?? DROP;
+    const v = values[`${m[1]}:${m[2]}`];
+    if (v === undefined) {
+      missing.add(`${m[1]}:${m[2]}`);
+      return opts.keepMissing ? s : DROP;
+    }
+    return /^(true|false|null|-?\d+(\.\d+)?)$/.test(v) ? JSON.parse(v) : v;
+  };
+  /** A query/form value: JSON text is filled key by key (a missing value drops only its key). */
+  const fillValue = (v: string): string | undefined => {
+    if (/^\s*[[{]/.test(v)) {
+      try {
+        return JSON.stringify(fillJsonPlaceholders(JSON.parse(v), exact));
+      } catch {
+        // not JSON after all
+      }
+    }
+    return sub(v);
+  };
 
   const url = new URL(req.url);
   for (const [k, v] of [...url.searchParams.entries()]) {
     if (!v.includes("{$")) continue;
-    const filled = sub(v, jsonSafe(v));
+    const filled = fillValue(v);
     if (filled === undefined) url.searchParams.delete(k);
     else url.searchParams.set(k, filled);
   }
@@ -298,14 +323,14 @@ export function fillBrowserPlaceholders(
       const form = new URLSearchParams(body);
       for (const [k, v] of [...form.entries()]) {
         if (!v.includes("{$")) continue;
-        const filled = sub(v, jsonSafe(v));
+        const filled = fillValue(v);
         if (filled === undefined) form.delete(k);
         else form.set(k, filled);
       }
       body = form.toString();
     } else if (/json/i.test(type)) {
       try {
-        body = JSON.stringify(fillJsonPlaceholders(JSON.parse(body), sub));
+        body = JSON.stringify(fillJsonPlaceholders(JSON.parse(body), exact));
       } catch {
         body = sub(body) ?? body;
       }
@@ -316,18 +341,14 @@ export function fillBrowserPlaceholders(
   return { request: { ...req, url: url.toString(), headers, body }, missing: [...missing] };
 }
 
-/** Inside a value that is itself JSON text, inserted values must be JSON-escaped. */
-function jsonSafe(container: string): (v: string) => string {
-  return /^\s*[[{]/.test(container) ? (v) => JSON.stringify(v).slice(1, -1) : (v) => v;
-}
 
-function fillJsonPlaceholders(value: unknown, sub: (s: string) => string | undefined): unknown {
-  if (typeof value === "string") return value.includes("{$") ? (sub(value) ?? DROP) : value;
-  if (Array.isArray(value)) return value.map((v) => fillJsonPlaceholders(v, sub)).filter((v) => v !== DROP);
+function fillJsonPlaceholders(value: unknown, fillString: (s: string) => unknown): unknown {
+  if (typeof value === "string") return value.includes("{$") ? fillString(value) : value;
+  if (Array.isArray(value)) return value.map((v) => fillJsonPlaceholders(v, fillString)).filter((v) => v !== DROP);
   if (value !== null && typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value)) {
-      const r = fillJsonPlaceholders(v, sub);
+      const r = fillJsonPlaceholders(v, fillString);
       if (r !== DROP) out[k] = r;
     }
     return out;
