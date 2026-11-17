@@ -13,18 +13,18 @@ export function toTabInfo(t: chrome.tabs.Tab): TabInfo {
   return { id: t.id!, windowId: t.windowId, title: t.title ?? "", url: t.url ?? "", active: t.active };
 }
 
-export async function activeTab(): Promise<chrome.tabs.Tab> {
-  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-  if (!tab?.id) throw new Error("No active tab.");
-  return tab;
-}
-
 /**
- * A tab by id. Without one: the background tab the AI is browsing in, if it's still open,
- * otherwise the tab the user is looking at (for "read this page").
+ * A tab by id. Without one: the background tab the AI is browsing in, if it's still open.
+ * Never the user's own tab unless the AI names it: the user may be looking at something private.
  */
 export async function getTab(tabId?: number): Promise<chrome.tabs.Tab> {
-  if (tabId === undefined) return (await aiTab()) ?? activeTab();
+  if (tabId === undefined) {
+    const mine = await aiTab();
+    if (mine) return mine;
+    throw new Error(
+      "No AnyMCP tab is open. Use navigate(url) to open the page first, or pass a tabId from list_tabs if the user asked you to use one of their tabs.",
+    );
+  }
   try {
     return await chrome.tabs.get(tabId);
   } catch {

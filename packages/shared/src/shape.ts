@@ -1,5 +1,6 @@
 // Turns a raw HTTP response into compact text for the AI, following a profile's `response` rules.
 
+import { fitJson, fitResponse, looksLikeFeed, parseFeed } from "./fit.js";
 import type { ResponseShape } from "./profile.js";
 
 export const DEFAULT_MAX_CHARS = 20_000;
@@ -67,11 +68,15 @@ export function shapeResponse(body: string, contentType: string, shape: Response
       let value: unknown = JSON.parse(body);
       if (shape?.pick) value = getPath(value, shape.pick);
       if (shape?.fields?.length) value = pickFields(value, shape.fields);
-      return truncate(JSON.stringify(value ?? null), maxChars);
+      const text = JSON.stringify(value ?? null);
+      if (text.length <= maxChars) return text;
+      // Too big: drop media plumbing, then cut the main list by whole items.
+      return fitResponse(value, maxChars);
     } catch {
       // Not JSON after all.
     }
   }
+  if (looksLikeFeed(body, contentType)) return fitJson(parseFeed(body), maxChars);
   if (/html/i.test(contentType) || /^\s*<(!doctype|html)/i.test(body)) return truncate(htmlToText(body), maxChars);
   return truncate(body, maxChars);
 }

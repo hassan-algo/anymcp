@@ -9,16 +9,16 @@ function isEmpty(v: unknown): boolean {
 }
 
 /** Removes null/empty values and caps arrays. Keeps false and 0. */
-export function compactJson(value: unknown, depth = 0): unknown {
+export function compactJson(value: unknown, depth = 0, maxArray = MAX_ARRAY): unknown {
   if (Array.isArray(value)) {
-    const items = value.map((v) => compactJson(v, depth + 1)).filter((v) => !isEmpty(v));
-    if (items.length > MAX_ARRAY) return [...items.slice(0, MAX_ARRAY), `… ${items.length - MAX_ARRAY} more item(s)`];
+    const items = value.map((v) => compactJson(v, depth + 1, maxArray)).filter((v) => !isEmpty(v));
+    if (items.length > maxArray) return [...items.slice(0, maxArray), `… ${items.length - maxArray} more item(s)`];
     return items;
   }
   if (value && typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value)) {
-      const c = compactJson(v, depth + 1);
+      const c = compactJson(v, depth + 1, maxArray);
       if (!isEmpty(c)) out[k] = c;
     }
     return out;

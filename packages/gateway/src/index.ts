@@ -9,6 +9,7 @@ import { isPaceSetting, Pacer, resumeSite, setPace } from "./pacing.js";
 import { log, serve } from "./server.js";
 import { SERVER_HELP, serverCommand } from "./servers-cli.js";
 import { getStats, resetStats, statsSummary } from "./stats.js";
+import { Upstream } from "./upstream.js";
 import { VERSION } from "./version.js";
 
 const HELP = `AnyMCP ${VERSION}: one MCP server for every website.
@@ -46,8 +47,13 @@ function readProfileFile(file: string | undefined): unknown {
 }
 
 function catalog(): Catalog {
-  const c = new Catalog(getPaths(), (m) => console.error(m));
+  const paths = getPaths();
+  const logErr = (m: string) => console.error(m);
+  const c = new Catalog(paths, logErr);
   c.reload();
+  // Include the user's other MCP servers (from their cached tool lists), so `list` shows them and
+  // `allow mcp-<name>` works, as the approval message tells people to run.
+  c.setExternal(new Upstream(paths, logErr).profiles());
   return c;
 }
 

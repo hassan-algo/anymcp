@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "mail.google.com",
+  "name": "mail.google.com",
+  "description": "Pages and tools AnyMCP picked up while your AI used mail.google.com.",
+  "version": "0.1.1",
+  "authors": [
+    "you"
+  ],
+  "categories": [
+    "learned"
+  ],
+  "origins": [
+    "https://mail.google.com"
+  ],
+  "auth": "browser-session",
+  "allowedHosts": [
+    "mail.google.com"
+  ],
+  "tools": [
+    {
+      "name": "open_path",
+      "title": "Open a mail.google.com page",
+      "description": "Opens any page on mail.google.com by its path (e.g. \"\" for the home page, or \"search?q=shoes\") in a background tab, signed in as the user, and returns the page text. Use it when no other tool for this site fits.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "default": "",
+            "description": "Path after the domain, with any ?query"
+          }
+        }
+      },
+      "mutates": false,
+      "action": {
+        "kind": "page",
+        "url": "https://mail.google.com/{+path}",
+        "maxChars": 20000
+      }
+    }
+  ]
+}

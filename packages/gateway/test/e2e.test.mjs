@@ -17,7 +17,7 @@ test("end to end: MCP client, gateway and a fake extension", async (t) => {
   }
 
   // Before the extension connects
-  let r = await client.callTool({ name: "read_page", arguments: {} });
+  let r = await client.callTool({ name: "read_page", arguments: { tabId: 7 } });
   assert.ok(r.isError);
   assert.match(text(r), /extension is not connected/);
 
@@ -50,10 +50,10 @@ test("end to end: MCP client, gateway and a fake extension", async (t) => {
   assert.match(text(r), /\{"name":"Pen"\}/);
   assert.deepEqual(ext.calls.map((c) => c.method), ["request_approval", "run_http"]);
 
-  r = await client.callTool({ name: "read_page", arguments: {} });
+  r = await client.callTool({ name: "read_page", arguments: { tabId: 7 } });
   assert.match(text(r), /<\/untrusted-content_>/, "page text can't close the wrapper");
 
-  r = await client.callTool({ name: "screenshot", arguments: {} });
+  r = await client.callTool({ name: "screenshot", arguments: { tabId: 7 } });
   assert.equal(r.content[0].type, "image");
 
   r = await client.callTool({ name: "browse", arguments: { list: "starter" } });
@@ -97,7 +97,7 @@ test("a second gateway forwards browser calls through the first", async (t) => {
   t.after(() => second.client.close());
   await waitFor(() => second.stderr().includes("joining"));
   const r = await waitFor(async () => {
-    const res = await second.client.callTool({ name: "read_page", arguments: {} });
+    const res = await second.client.callTool({ name: "read_page", arguments: { tabId: 7 } });
     return res.isError ? undefined : res;
   });
   assert.match(text(r), /Hello/);
@@ -172,7 +172,7 @@ test("a follower takes over the port when the leader exits", async (t) => {
   await waitFor(() => second.stderr().includes("Took over"), 10_000);
   const ext = await waitFor(() => fakeExtension({ port: h.port, token: h.token, handlers: { read_page: async () => pageResult } }).catch(() => undefined));
   t.after(() => ext.close());
-  const r = await second.client.callTool({ name: "read_page", arguments: {} });
+  const r = await second.client.callTool({ name: "read_page", arguments: { tabId: 7 } });
   assert.match(text(r), /Hello/);
 });
 
@@ -257,7 +257,7 @@ test("a newer gateway takes over from an older one, so the extension gets the ne
   await waitFor(() => fresh.stderr().includes("extension connected"), 5_000);
   // The old one keeps working through the new one.
   const r = await waitFor(async () => {
-    const x = await old.client.callTool({ name: "read_page", arguments: {} });
+    const x = await old.client.callTool({ name: "read_page", arguments: { tabId: 7 } });
     return x.isError ? undefined : x;
   }, 15_000);
   assert.match(text(r), /Hello/);
@@ -277,7 +277,7 @@ test("a handover waits for running calls, so a newer gateway doesn't cut them of
   });
   t.after(() => ext.close());
   await waitFor(() => old.stderr().includes("extension connected"), 5_000);
-  const running = old.client.callTool({ name: "read_page", arguments: {} });
+  const running = old.client.callTool({ name: "read_page", arguments: { tabId: 7 } });
   await new Promise((r) => setTimeout(r, 300));
   const fresh = await startGateway({ ...h.env, ANYMCP_BUILD: "2000" });
   t.after(() => fresh.client.close());
@@ -313,4 +313,45 @@ test("open_url reads a page through the browser, counts it, and creates a site e
   assert.match(found, /producthunt\.example\/open_path/);
   const bad = await client.callTool({ name: "open_url", arguments: { url: "not a url at all" } });
   assert.ok(bad.isError);
+});
+
+test("browser tools never fall back to the user's own tab", async (t) => {
+  const h = await makeHome();
+  const { client } = await startGateway(h.env);
+  t.after(() => client.close());
+  const userTab = { id: 3, windowId: 1, title: "Netflix", url: "https://www.netflix.com/browse", active: true };
+  const ext = await fakeExtension({
+    port: h.port,
+    token: h.token,
+    handlers: {
+      list_tabs: async () => [userTab],
+      navigate: async (p) => ({ id: 9, windowId: 1, title: "Example", url: p.url, active: false }),
+      read_page: async (p) => ({ tabId: p.tabId, title: p.tabId === 3 ? "Netflix" : "Example", url: p.tabId === 3 ? userTab.url : "https://example.com/", text: "Hello", truncated: false }),
+    },
+  });
+  t.after(() => ext.close());
+  await waitFor(async () => !(await client.callTool({ name: "list_tabs", arguments: {} })).isError);
+
+  // Nothing opened yet: refuse instead of reading whatever the user is looking at.
+  let r = await client.callTool({ name: "read_page", arguments: {} });
+  assert.ok(r.isError);
+  assert.match(text(r), /No AnyMCP tab is open yet/);
+  assert.ok(!ext.calls.some((c) => c.method === "read_page"));
+
+  // After navigate, read_page reads that tab.
+  r = await client.callTool({ name: "navigate", arguments: { url: "https://example.com/" } });
+  assert.match(text(r), /Tab 9/);
+  assert.equal(ext.calls.at(-1).params.newTab, true, "a new gateway opens its own tab");
+  r = await client.callTool({ name: "read_page", arguments: {} });
+  assert.equal(ext.calls.at(-1).params.tabId, 9);
+  assert.match(text(r), /example\.com/);
+
+  // The next navigate reuses it.
+  await client.callTool({ name: "navigate", arguments: { url: "https://example.com/b" } });
+  assert.equal(ext.calls.at(-1).params.tabId, 9);
+
+  // The user's own tab only when asked, and the result says so.
+  r = await client.callTool({ name: "read_page", arguments: { active: true } });
+  assert.equal(ext.calls.at(-1).params.tabId, 3);
+  assert.match(text(r), /Reading the user's own active tab: "Netflix"/);
 });
